@@ -77,12 +77,15 @@ function loadImage(src){
   return new Promise((res, rej)=>{
     const img = new Image();
     img.onload = ()=>res(img);
-    img.onerror = rej;
+    img.onerror = (e)=>rej(new Error("Failed to load: " + src));
     img.src = src;
   });
 }
 
-const assets = { cars: [], finish:null, start:null };
+const assets = { cars: [], finish:null, start:null, carsOk: [], errs: [] };
+let assetsReady = false;
+let assetMsg = '';
+
 
 const state = {
   running:false,
@@ -342,10 +345,51 @@ function drawTrails(){
   }
 }
 
+function drawFallbackCar(i, P, t, w, h){
+  // simple rounded rectangle + glow as fallback if PNG failed
+  const c = laneColors[i];
+  ctx.save();
+  ctx.translate(P.x, P.y);
+  const rot = Math.sin((t*2.4 + i*0.6)*Math.PI) * 0.03 * (1-t);
+  ctx.rotate(rot);
+  ctx.globalCompositeOperation = "lighter";
+  ctx.shadowColor = c;
+  ctx.shadowBlur = 18;
+  ctx.globalAlpha = 0.85;
+  const r = Math.max(6, w*0.18);
+  ctx.fillStyle = c;
+  roundRect(-w/2, -h/2, w, h, r);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function drawDebug(){
+  if(!assetsReady) return;
+  if(!assetMsg) return;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(20, 20, canvas.width-40, 90);
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("⚠ " + assetMsg, 40, 78);
+  ctx.restore();
+}
+
 function drawCars(){
   for(let i=0;i<LANES;i++){
     const img = assets.cars[i];
-    if(!img) continue;
+    // if PNG not loaded, draw fallback
+
     const t = state.pos[i];
     const P = n2px(laneCenterX(i,t), roadY(t));
     const scale = lerp(1.05, 0.32, t);
@@ -424,12 +468,51 @@ function render(){
   drawTrails();
   drawCars();
   drawStartAndFinish();
+  drawDebug();
 }
 
 async function boot(){
-  assets.cars = await Promise.all(carFiles.map(loadImage));
-  assets.finish = await loadImage(finishPng);
-  assets.start = await loadImage(startPng);
+  // Try clean/ first; if missing, fall back to legacy assets/ paths.
+  const altCarFiles = Array.from({length: LANES}, (_,i)=>`assets/car_${String(i+1).padStart(2,"0")}.png`);
+  const altFinish = "assets/a_digital_2d_rendering_showcases_a_drag_racing_fin.png";
+  const altStart  = "assets/a_2d_digital_illustration_depicts_a_futuristic_gar.png";
+
+  const carRes = await Promise.allSettled(carFiles.map(loadImage));
+  assets.cars = [];
+  assets.carsOk = [];
+  for(let i=0;i<carRes.length;i++){
+    if(carRes[i].status === "fulfilled"){
+      assets.cars[i] = carRes[i].value;
+      assets.carsOk[i] = true;
+    } else {
+      assets.carsOk[i] = false;
+      assets.errs.push(carRes[i].reason?.message || String(carRes[i].reason));
+    }
+  }
+  // If most cars failed, try legacy paths
+  const okCount = assets.carsOk.filter(Boolean).length;
+  if(okCount < Math.ceil(LANES/2)){
+    const carRes2 = await Promise.allSettled(altCarFiles.map(loadImage));
+    for(let i=0;i<carRes2.length;i++){
+      if(carRes2[i].status === "fulfilled"){
+        assets.cars[i] = carRes2[i].value;
+        assets.carsOk[i] = true;
+      }
+    }
+  }
+
+  const fin = await Promise.allSettled([loadImage(finishPng), loadImage(altFinish)]);
+  assets.finish = fin[0].status==="fulfilled" ? fin[0].value : (fin[1].status==="fulfilled" ? fin[1].value : null);
+  const st = await Promise.allSettled([loadImage(startPng), loadImage(altStart)]);
+  assets.start = st[0].status==="fulfilled" ? st[0].value : (st[1].status==="fulfilled" ? st[1].value : null);
+
+  assetsReady = true;
+
+  const missingCars = assets.carsOk.filter(x=>!x).length;
+  if(missingCars > 0 || !assets.finish || !assets.start){
+    assetMsg = `Assets: cars missing ${missingCars}/${LANES}, finish ${assets.finish? "ok":"missing"}, start ${assets.start? "ok":"missing"}`;
+    console.warn(assetMsg, assets.errs);
+  }
   render();
 }
 boot();
