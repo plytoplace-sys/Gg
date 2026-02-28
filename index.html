@@ -3,111 +3,116 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Donat Drag Race — STREAM NEON SVG (XML)</title>
+  <title>Donat Drag Race — STREAM NEON SVG (XML) v2.1</title>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
   <div class="stage" id="stage">
-    <!-- SVG = XML UI/scene -->
     <svg id="scene" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Neon drag racing scene">
       <defs>
-        <!-- glows -->
-        <filter id="glowXS" x="-50%" y="-50%" width="200%" height="200%">
+        <!-- Glows -->
+        <filter id="glowXS" x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="2.2" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="glowS" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="4.6" result="b"/>
+        <filter id="glowS" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="5.5" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="glowM" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="10" result="b"/>
+        <filter id="glowM" x="-90%" y="-90%" width="280%" height="280%">
+          <feGaussianBlur stdDeviation="11" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="glowL" x="-120%" y="-120%" width="340%" height="340%">
-          <feGaussianBlur stdDeviation="18" result="b"/>
+        <filter id="glowL" x="-140%" y="-140%" width="380%" height="380%">
+          <feGaussianBlur stdDeviation="22" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
 
-        <!-- sky -->
+        <!-- Sky -->
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#040612"/>
-          <stop offset="0.55" stop-color="#06040f"/>
+          <stop offset="0.55" stop-color="#070416"/>
           <stop offset="1" stop-color="#040612"/>
         </linearGradient>
         <radialGradient id="hazeA" cx="55%" cy="18%" r="70%">
-          <stop offset="0" stop-color="#3e6bff" stop-opacity="0.32"/>
+          <stop offset="0" stop-color="#3e6bff" stop-opacity="0.45"/>
           <stop offset="1" stop-color="#3e6bff" stop-opacity="0"/>
         </radialGradient>
         <radialGradient id="hazeB" cx="18%" cy="62%" r="70%">
-          <stop offset="0" stop-color="#ff49c8" stop-opacity="0.23"/>
+          <stop offset="0" stop-color="#ff49c8" stop-opacity="0.34"/>
           <stop offset="1" stop-color="#ff49c8" stop-opacity="0"/>
         </radialGradient>
         <radialGradient id="hazeC" cx="82%" cy="62%" r="70%">
-          <stop offset="0" stop-color="#ffb13d" stop-opacity="0.18"/>
+          <stop offset="0" stop-color="#ffb13d" stop-opacity="0.26"/>
           <stop offset="1" stop-color="#ffb13d" stop-opacity="0"/>
         </radialGradient>
 
-        <!-- road -->
+        <!-- Road -->
         <linearGradient id="asphalt" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#1a1c33" stop-opacity="0.95"/>
-          <stop offset="0.6" stop-color="#0d0f1a" stop-opacity="0.98"/>
+          <stop offset="0" stop-color="#24284a" stop-opacity="0.96"/>
+          <stop offset="0.6" stop-color="#0e1020" stop-opacity="0.99"/>
           <stop offset="1" stop-color="#070812" stop-opacity="0.99"/>
         </linearGradient>
         <linearGradient id="roadSheen" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#ffffff" stop-opacity="0.00"/>
-          <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.07"/>
-          <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.12"/>
-          <stop offset="1" stop-color="#ffffff" stop-opacity="0.00"/>
+          <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+          <stop offset="0.40" stop-color="#ffffff" stop-opacity="0.06"/>
+          <stop offset="0.52" stop-color="#ffffff" stop-opacity="0.18"/>
+          <stop offset="0.64" stop-color="#ffffff" stop-opacity="0.06"/>
+          <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
         </linearGradient>
-
-        <!-- neon edge stroke paint -->
         <linearGradient id="edgeNeon" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#7aa2ff" stop-opacity="0.55"/>
-          <stop offset="0.5" stop-color="#ff4bd1" stop-opacity="0.22"/>
-          <stop offset="1" stop-color="#36ff7a" stop-opacity="0.38"/>
+          <stop offset="0" stop-color="#7aa2ff" stop-opacity="0.75"/>
+          <stop offset="0.5" stop-color="#ff4bd1" stop-opacity="0.40"/>
+          <stop offset="1" stop-color="#36ff7a" stop-opacity="0.62"/>
         </linearGradient>
 
-        <!-- car (more car-like, multi-layer) -->
-        <g id="car3D">
-          <!-- shadow -->
-          <ellipse cx="0" cy="66" rx="74" ry="20" fill="#000" opacity="0.26"/>
-          <!-- rear wing -->
-          <path d="M-78 10 h36 q10 0 14 -10 l2 -10 h-68z" opacity="0.30"/>
-          <!-- body -->
-          <path d="M-86 36
-                   Q-86 6 -60 -10
-                   Q-30 -34 0 -36
-                   Q30 -34 60 -10
-                   Q86 6 86 36
-                   Q86 62 70 72
-                   Q44 88 0 90
-                   Q-44 88 -70 72
-                   Q-86 62 -86 36Z"/>
-          <!-- hood highlight -->
-          <path d="M-54 26 Q-22 -6 0 -8 Q22 -6 54 26 Q24 36 0 36 Q-24 36 -54 26Z" opacity="0.22"/>
-          <!-- windshield -->
-          <path d="M-40 14 Q0 -18 40 14 Q22 24 0 24 Q-22 24 -40 14Z" opacity="0.40"/>
-          <!-- splitter -->
-          <path d="M-66 66 Q0 88 66 66 Q48 96 0 102 Q-48 96 -66 66Z" opacity="0.22"/>
-          <!-- wheels -->
-          <g opacity="0.40">
-            <circle cx="-62" cy="56" r="14"/>
-            <circle cx="62" cy="56" r="14"/>
-          </g>
-          <g opacity="0.22">
-            <circle cx="-62" cy="56" r="7"/>
-            <circle cx="62" cy="56" r="7"/>
-          </g>
-        </g>
-
-        <!-- flame sprite -->
+        <!-- Flame -->
         <radialGradient id="flameG" cx="50%" cy="40%" r="70%">
           <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
-          <stop offset="0.35" stop-color="#ffef7a" stop-opacity="0.70"/>
-          <stop offset="0.65" stop-color="#ff7a1a" stop-opacity="0.55"/>
+          <stop offset="0.30" stop-color="#ffef7a" stop-opacity="0.78"/>
+          <stop offset="0.60" stop-color="#ff7a1a" stop-opacity="0.60"/>
           <stop offset="1" stop-color="#ff1b7a" stop-opacity="0.00"/>
         </radialGradient>
+
+        <!-- Car gradients (applied per-lane by JS through CSS variables) -->
+        <linearGradient id="carGloss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
+          <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+
+        <!-- Car template (no <use>, JS clones this <g>) -->
+        <g id="carTemplate">
+          <ellipse class="carShadow" cx="0" cy="78" rx="82" ry="22" fill="#000" opacity="0.30"/>
+          <path class="carWing" d="M-86 18 h40 q12 0 16 -12 l2 -12 h-74z" opacity="0.30"/>
+          <path class="carBody"
+                d="M-94 40
+                   Q-94 6 -66 -12
+                   Q-34 -40 0 -42
+                   Q34 -40 66 -12
+                   Q94 6 94 40
+                   Q94 70 74 82
+                   Q46 100 0 104
+                   Q-46 100 -74 82
+                   Q-94 70 -94 40Z"/>
+          <path class="carGloss"
+                d="M-60 34 Q-26 -4 0 -6 Q26 -4 60 34 Q26 48 0 48 Q-26 48 -60 34Z"
+                fill="url(#carGloss)" opacity="0.9"/>
+          <path class="carGlass"
+                d="M-44 20 Q0 -20 44 20 Q24 34 0 34 Q-24 34 -44 20Z"
+                fill="#d7f1ff" opacity="0.35"/>
+          <path class="carSplitter"
+                d="M-70 76 Q0 104 70 76 Q52 118 0 126 Q-52 118 -70 76Z"
+                opacity="0.22"/>
+          <g class="carWheels" opacity="0.42">
+            <circle cx="-68" cy="62" r="14" fill="#000"/>
+            <circle cx="68" cy="62" r="14" fill="#000"/>
+          </g>
+          <g class="carWheelCore" opacity="0.22">
+            <circle cx="-68" cy="62" r="7" fill="#fff"/>
+            <circle cx="68" cy="62" r="7" fill="#fff"/>
+          </g>
+        </g>
 
       </defs>
 
@@ -117,78 +122,85 @@
       <rect width="1080" height="1920" fill="url(#hazeB)"/>
       <rect width="1080" height="1920" fill="url(#hazeC)"/>
 
-      <!-- stars -->
-      <g opacity="0.35" filter="url(#glowXS)">
-        <circle cx="120" cy="140" r="2" fill="#fff"/><circle cx="220" cy="200" r="1.6" fill="#fff"/>
-        <circle cx="940" cy="160" r="2" fill="#fff"/><circle cx="820" cy="230" r="1.8" fill="#fff"/>
-        <circle cx="520" cy="120" r="1.6" fill="#fff"/><circle cx="620" cy="210" r="1.2" fill="#fff"/>
+      <!-- Stars -->
+      <g opacity="0.45" filter="url(#glowXS)">
+        <circle cx="120" cy="140" r="2.2" fill="#fff"/><circle cx="220" cy="200" r="1.9" fill="#fff"/>
+        <circle cx="940" cy="160" r="2.2" fill="#fff"/><circle cx="820" cy="230" r="2.0" fill="#fff"/>
+        <circle cx="520" cy="120" r="1.9" fill="#fff"/><circle cx="620" cy="210" r="1.5" fill="#fff"/>
       </g>
 
-      <!-- deep skyline (parallax layers) -->
-      <g id="cityBack" opacity="0.55">
-        <g fill="#0a0b18">
-          <rect x="40" y="200" width="150" height="580" rx="12"/>
-          <rect x="220" y="260" width="190" height="520" rx="12"/>
-          <rect x="440" y="170" width="160" height="610" rx="12"/>
-          <rect x="630" y="240" width="250" height="540" rx="12"/>
-          <rect x="910" y="220" width="130" height="560" rx="12"/>
+      <!-- Skyline (more obvious) -->
+      <g id="cityBack" opacity="0.62">
+        <g fill="#0a0b1a">
+          <rect x="30" y="180" width="170" height="640" rx="14"/>
+          <rect x="230" y="260" width="210" height="560" rx="14"/>
+          <rect x="470" y="150" width="180" height="670" rx="14"/>
+          <rect x="670" y="240" width="260" height="580" rx="14"/>
+          <rect x="950" y="210" width="100" height="610" rx="14"/>
         </g>
-        <g fill="#7aa2ff" opacity="0.14" filter="url(#glowS)">
-          <g>
-            <rect x="80" y="260" width="12" height="12"/><rect x="108" y="260" width="12" height="12"/><rect x="136" y="260" width="12" height="12"/>
-            <rect x="80" y="300" width="12" height="12"/><rect x="108" y="300" width="12" height="12"/><rect x="136" y="300" width="12" height="12"/>
-            <rect x="80" y="340" width="12" height="12"/><rect x="108" y="340" width="12" height="12"/><rect x="136" y="340" width="12" height="12"/>
-          </g>
+        <g opacity="0.22" filter="url(#glowM)">
+          <rect x="60" y="290" width="120" height="10" fill="#7aa2ff"/>
+          <rect x="270" y="340" width="140" height="10" fill="#ff4bd1"/>
+          <rect x="520" y="260" width="120" height="10" fill="#36ff7a"/>
+          <rect x="720" y="320" width="170" height="10" fill="#ffcc33"/>
+        </g>
+        <g fill="#7aa2ff" opacity="0.18" filter="url(#glowS)">
+          <rect x="86" y="360" width="12" height="12"/><rect x="114" y="360" width="12" height="12"/><rect x="142" y="360" width="12" height="12"/>
+          <rect x="86" y="400" width="12" height="12"/><rect x="114" y="400" width="12" height="12"/><rect x="142" y="400" width="12" height="12"/>
         </g>
       </g>
 
-      <g id="cityFront" opacity="0.72" transform="translate(0,40)">
-        <g fill="#0e1022">
-          <rect x="0" y="540" width="230" height="540" rx="12"/>
-          <rect x="250" y="500" width="240" height="580" rx="12"/>
-          <rect x="510" y="560" width="260" height="520" rx="12"/>
-          <rect x="790" y="520" width="290" height="560" rx="12"/>
+      <g id="cityFront" opacity="0.78" transform="translate(0,70)">
+        <g fill="#0f1126">
+          <rect x="-20" y="560" width="280" height="600" rx="16"/>
+          <rect x="260" y="520" width="280" height="640" rx="16"/>
+          <rect x="560" y="580" width="300" height="580" rx="16"/>
+          <rect x="860" y="540" width="260" height="620" rx="16"/>
         </g>
-        <g opacity="0.18" filter="url(#glowM)">
-          <rect x="40" y="620" width="150" height="8" fill="#ff4bd1"/>
-          <rect x="290" y="580" width="170" height="8" fill="#7aa2ff"/>
-          <rect x="560" y="650" width="180" height="8" fill="#36ff7a"/>
-          <rect x="820" y="610" width="210" height="8" fill="#ffcc33"/>
+        <g opacity="0.22" filter="url(#glowL)">
+          <rect x="40" y="650" width="200" height="10" fill="#ff4bd1"/>
+          <rect x="310" y="610" width="210" height="10" fill="#7aa2ff"/>
+          <rect x="620" y="690" width="210" height="10" fill="#36ff7a"/>
+          <rect x="900" y="640" width="190" height="10" fill="#ffcc33"/>
         </g>
       </g>
 
       <!-- Road -->
       <path id="road" d="M 400 260 L 680 260 L 1000 1680 L 80 1680 Z" fill="url(#asphalt)"/>
-      <!-- road sheen -->
-      <path d="M 430 300 L 650 300 L 920 1680 L 160 1680 Z" fill="url(#roadSheen)" opacity="0.35"/>
+      <path d="M 430 300 L 650 300 L 920 1680 L 160 1680 Z" fill="url(#roadSheen)" opacity="0.55"/>
 
-      <!-- neon edges (thick blur + crisp) -->
-      <path id="edgeL" d="M 400 260 L 80 1680" stroke="url(#edgeNeon)" stroke-width="26" opacity="0.22" filter="url(#glowL)"/>
-      <path id="edgeR" d="M 680 260 L 1000 1680" stroke="url(#edgeNeon)" stroke-width="26" opacity="0.22" filter="url(#glowL)"/>
-      <path d="M 400 260 L 80 1680" stroke="rgba(255,255,255,0.12)" stroke-width="8" opacity="0.65" filter="url(#glowS)"/>
-      <path d="M 680 260 L 1000 1680" stroke="rgba(255,255,255,0.12)" stroke-width="8" opacity="0.65" filter="url(#glowS)"/>
+      <!-- Neon edges (very visible) -->
+      <path d="M 400 260 L 80 1680" stroke="url(#edgeNeon)" stroke-width="46" opacity="0.30" filter="url(#glowL)">
+        <animate attributeName="opacity" values="0.24;0.34;0.26" dur="3.2s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 680 260 L 1000 1680" stroke="url(#edgeNeon)" stroke-width="46" opacity="0.30" filter="url(#glowL)">
+        <animate attributeName="opacity" values="0.26;0.36;0.24" dur="3.6s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 400 260 L 80 1680" stroke="rgba(255,255,255,0.16)" stroke-width="10" opacity="0.82" filter="url(#glowS)"/>
+      <path d="M 680 260 L 1000 1680" stroke="rgba(255,255,255,0.16)" stroke-width="10" opacity="0.82" filter="url(#glowS)"/>
 
       <!-- lane lines + center glow -->
-      <g id="laneLines" stroke="rgba(255,255,255,0.20)" stroke-linecap="round" fill="none" opacity="0.92"></g>
-      <path d="M 540 260 L 540 1680" stroke="#7aa2ff" stroke-width="18" opacity="0.06" filter="url(#glowL)"/>
+      <g id="laneLines" stroke="rgba(255,255,255,0.22)" stroke-linecap="round" fill="none" opacity="0.95"></g>
+      <path d="M 540 260 L 540 1680" stroke="#7aa2ff" stroke-width="28" opacity="0.10" filter="url(#glowL)">
+        <animate attributeName="opacity" values="0.07;0.13;0.09" dur="2.8s" repeatCount="indefinite"/>
+      </path>
 
       <!-- finish -->
       <g id="finishBand"></g>
 
-      <!-- FX groups -->
+      <!-- FX + cars -->
       <g id="trails" filter="url(#glowM)"></g>
       <g id="fx" filter="url(#glowM)"></g>
       <g id="cars" filter="url(#glowS)"></g>
 
       <!-- vignette -->
-      <rect width="1080" height="1920" fill="black" opacity="0.18"/>
+      <rect width="1080" height="1920" fill="black" opacity="0.16"/>
     </svg>
 
-    <!-- Flash overlay (CSS) -->
     <div class="flash" id="flash"></div>
 
     <!-- Top donors strip -->
-    <div class="topStrip" id="topStrip" aria-label="top donors strip">
+    <div class="topStrip" aria-label="top donors strip">
       <div class="stripTitle">ТОП</div>
       <div class="stripList" id="stripList"></div>
     </div>
@@ -215,7 +227,6 @@
       </div>
     </div>
 
-    <!-- Winner modal -->
     <div class="winnerOverlay" id="winner" hidden>
       <div class="winnerCard">
         <div class="winnerTitle">ПОБЕДИТЕЛЬ</div>
@@ -224,7 +235,6 @@
       </div>
     </div>
 
-    <!-- Tap layer -->
     <div class="hit" id="hit" aria-label="tap to donate lane"></div>
   </div>
 
