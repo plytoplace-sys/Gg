@@ -3,24 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TikTok Голосование — Donat Drag Race (Web UI)</title>
+  <title>TikTok Голосование — Drag Race (v2)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
-    <div class="bg">
-      <div class="bg-city"></div>
-      <div class="bg-vignette"></div>
-    </div>
+    <div class="bg"><div class="bg-city"></div><div class="bg-vignette"></div></div>
 
-    <div class="stage" id="stage">
-      <div class="track" aria-hidden="true"></div>
-
-      <img class="finish" alt="Finish arch" src="assets/a_digital_2d_rendering_showcases_a_drag_racing_fin.png"/>
-
-      <div class="lanes" id="lanes"></div>
-
-      <img class="start-garage" alt="Start garage" src="assets/a_2d_digital_illustration_depicts_a_futuristic_gar.png"/>
+    <div class="stage">
+      <canvas id="game" width="1080" height="1920"></canvas>
 
       <div class="hud">
         <div class="hud-top">
@@ -29,18 +20,9 @@
             <div class="badge-sub">TikTok Голосование</div>
           </div>
           <div class="stats">
-            <div class="stat">
-              <div class="stat-label">Банк</div>
-              <div class="stat-value" id="bankValue">0</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Раунд</div>
-              <div class="stat-value" id="roundValue">01</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Время</div>
-              <div class="stat-value" id="timeValue">60</div>
-            </div>
+            <div class="stat"><div class="stat-label">Банк</div><div class="stat-value" id="bankValue">0</div></div>
+            <div class="stat"><div class="stat-label">Раунд</div><div class="stat-value" id="roundValue">01</div></div>
+            <div class="stat"><div class="stat-label">Время</div><div class="stat-value" id="timeValue">60</div></div>
           </div>
         </div>
 
@@ -62,8 +44,16 @@
                 <button class="btn btn-small" data-d="20">+20</button>
                 <button class="btn btn-small" data-d="50">+50</button>
               </div>
-              <div class="help">Нажми +X, затем кликни по полосе — донат и ускорение.</div>
+              <div class="help">Нажми +X, затем тапни по треку — донат попадёт в нужную полосу.</div>
             </div>
+          </div>
+        </div>
+
+        <div class="winner" id="winner" hidden>
+          <div class="winner-card">
+            <div class="winner-title">ПОБЕДИТЕЛЬ</div>
+            <div class="winner-lane" id="winnerLane">Полоса 1</div>
+            <button class="btn" id="btnNext">Следующий раунд</button>
           </div>
         </div>
       </div>
@@ -71,9 +61,7 @@
       <div class="hit" id="hit" aria-hidden="true"></div>
     </div>
 
-    <div class="footer-note">
-      Один экран 9:16: трек + старт/финиш + машинки + цветные следы + HUD.
-    </div>
+    <div class="footer-note">v2: перспектива (сужение), машинки уменьшаются, движение по маршрутам, победитель на финише.</div>
   </div>
 
   <script src="app.js"></script>
