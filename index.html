@@ -1,76 +1,154 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TikTok Голосование — Drag Race (v2)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Donat Drag Race — NEON SVG (TOP)</title>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <div class="app">
-    <div class="bg"><div class="bg-city"></div><div class="bg-vignette"></div></div>
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg" aria-label="Neon drag race scene">
+      <defs>
+        <filter id="glowS" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glowM" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="10" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#07081a"/>
+          <stop offset="0.55" stop-color="#05050b"/>
+          <stop offset="1" stop-color="#07081a"/>
+        </linearGradient>
+        <radialGradient id="neonA" cx="50%" cy="15%" r="70%">
+          <stop offset="0" stop-color="#4269ff" stop-opacity="0.32"/>
+          <stop offset="1" stop-color="#4269ff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="neonB" cx="20%" cy="55%" r="70%">
+          <stop offset="0" stop-color="#ff50be" stop-opacity="0.24"/>
+          <stop offset="1" stop-color="#ff50be" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="neonC" cx="80%" cy="55%" r="70%">
+          <stop offset="0" stop-color="#ffaa3c" stop-opacity="0.20"/>
+          <stop offset="1" stop-color="#ffaa3c" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="asphalt" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#15172a" stop-opacity="0.95"/>
+          <stop offset="1" stop-color="#0b0c14" stop-opacity="0.98"/>
+        </linearGradient>
+        <g id="carShape">
+          <path d="M-70 30 Q-70 -10 -45 -30 Q-10 -60 0 -60 Q10 -60 45 -30 Q70 -10 70 30 Q70 60 0 60 Q-70 60 -70 30Z" />
+          <path d="M-38 -18 Q0 -48 38 -18 Q12 -6 0 -6 Q-12 -6 -38 -18Z" opacity="0.28"/>
+          <circle cx="-48" cy="36" r="10" opacity="0.35"/>
+          <circle cx="48" cy="36" r="10" opacity="0.35"/>
+        </g>
+      </defs>
 
-    <div class="stage">
-      <canvas id="game" width="1080" height="1920"></canvas>
+      <rect width="1080" height="1920" fill="url(#sky)"/>
+      <rect width="1080" height="1920" fill="url(#neonA)"/>
+      <rect width="1080" height="1920" fill="url(#neonB)"/>
+      <rect width="1080" height="1920" fill="url(#neonC)"/>
 
-      <div class="hud">
-        <div class="hud-top">
-          <div class="badge">
-            <div class="badge-title">DONAT DRAG RACE</div>
-            <div class="badge-sub">TikTok Голосование</div>
-          </div>
-          <div class="stats">
-            <div class="stat"><div class="stat-label">Банк</div><div class="stat-value" id="bankValue">0</div></div>
-            <div class="stat"><div class="stat-label">Раунд</div><div class="stat-value" id="roundValue">01</div></div>
-            <div class="stat"><div class="stat-label">Время</div><div class="stat-value" id="timeValue">60</div></div>
-          </div>
+      <g opacity="0.55">
+        <g fill="#0f1020">
+          <rect x="40" y="210" width="130" height="520" rx="10"/>
+          <rect x="190" y="260" width="170" height="470" rx="10"/>
+          <rect x="380" y="180" width="140" height="550" rx="10"/>
+          <rect x="540" y="240" width="220" height="490" rx="10"/>
+          <rect x="780" y="200" width="160" height="530" rx="10"/>
+          <rect x="960" y="280" width="90" height="450" rx="10"/>
+        </g>
+        <g fill="#7aa2ff" opacity="0.18" filter="url(#glowS)">
+          <g>
+            <rect x="70" y="260" width="12" height="12"/><rect x="96" y="260" width="12" height="12"/><rect x="122" y="260" width="12" height="12"/>
+            <rect x="70" y="296" width="12" height="12"/><rect x="96" y="296" width="12" height="12"/><rect x="122" y="296" width="12" height="12"/>
+          </g>
+          <g transform="translate(210,0)">
+            <rect x="0" y="310" width="12" height="12"/><rect x="26" y="310" width="12" height="12"/><rect x="52" y="310" width="12" height="12"/>
+            <rect x="0" y="346" width="12" height="12"/><rect x="26" y="346" width="12" height="12"/><rect x="52" y="346" width="12" height="12"/>
+          </g>
+        </g>
+      </g>
+
+      <path id="road" d="M 400 260 L 680 260 L 1000 1680 L 80 1680 Z" fill="url(#asphalt)"/>
+      <path d="M 400 260 L 80 1680" stroke="rgba(255,255,255,0.10)" stroke-width="10" filter="url(#glowS)"/>
+      <path d="M 680 260 L 1000 1680" stroke="rgba(255,255,255,0.10)" stroke-width="10" filter="url(#glowS)"/>
+
+      <g id="laneLines" stroke="rgba(255,255,255,0.18)" stroke-linecap="round" fill="none" opacity="0.95"></g>
+      <g id="finishBand"></g>
+
+      <g id="trails" filter="url(#glowM)"></g>
+      <g id="cars" filter="url(#glowS)"></g>
+
+      <g id="garage">
+        <path d="M 0 1400 C 240 1340 840 1340 1080 1400 L 1080 1920 L 0 1920 Z" fill="rgba(0,0,0,0.35)"/>
+        <path d="M 80 1500 C 260 1440 820 1440 1000 1500 L 1040 1920 L 40 1920 Z"
+              fill="rgba(10,12,18,0.85)" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+        <rect x="330" y="1458" width="420" height="86" rx="22"
+              fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)" stroke-width="3"/>
+        <text x="540" y="1516" text-anchor="middle"
+              font-size="46" font-weight="900" letter-spacing="6"
+              fill="#ffffff" opacity="0.92" filter="url(#glowS)">START</text>
+      </g>
+
+      <rect width="1080" height="1920" fill="black" opacity="0.16"/>
+    </svg>
+
+    <div class="flash" id="flash"></div>
+
+    <div class="hud">
+      <div class="hud-top">
+        <div class="badge">
+          <div class="badge-title">DONAT DRAG RACE</div>
+          <div class="badge-sub">NEON • SVG/XML • без картинок</div>
         </div>
 
-        <div class="hud-bottom">
-          <div class="panel">
-            <div class="panel-title">Лента донатов</div>
-            <div class="feed" id="feed"></div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-title">Управление (демо)</div>
-            <div class="controls">
-              <button class="btn" id="btnStart">Старт</button>
-              <button class="btn" id="btnReset">Сброс</button>
-              <div class="divider"></div>
-              <div class="control-row">
-                <button class="btn btn-small" data-d="1">+1</button>
-                <button class="btn btn-small" data-d="5">+5</button>
-                <button class="btn btn-small" data-d="20">+20</button>
-                <button class="btn btn-small" data-d="50">+50</button>
-              </div>
-              <div class="help">Нажми +X, затем тапни по треку — донат попадёт в нужную полосу.</div>
-            </div>
-          </div>
+        <div class="topdonors">
+          <div class="panel-title">ТОП донатеров</div>
+          <ol class="donorlist" id="donorList"></ol>
         </div>
 
-          <div class="panel panel-wins">
-            <div class="panel-title">Общие победы</div>
-            <div class="wins" id="wins">
-              <div class="wins-total">Всего: <span id="winsTotal">0</span></div>
-              <div class="wins-grid" id="winsGrid"></div>
-            </div>
-          </div>
-</div>
-
-        <div class="winner" id="winner" hidden>
-          <div class="winner-card">
-            <div class="winner-title">ПОБЕДИТЕЛЬ</div>
-            <div class="winner-lane" id="winnerLane">Полоса 1</div>
-            <button class="btn" id="btnNext">Следующий раунд</button>
-          </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-label">Банк</div><div class="stat-value" id="bankValue">0</div></div>
+          <div class="stat"><div class="stat-label">Раунд</div><div class="stat-value" id="roundValue">01</div></div>
+          <div class="stat"><div class="stat-label">Время</div><div class="stat-value" id="timeValue">60</div></div>
         </div>
       </div>
 
-      <div class="hit" id="hit" aria-hidden="true"></div>
+      <div class="hud-bottom">
+        <div class="panel">
+          <div class="panel-title">Комментарии доната</div>
+          <div class="feed" id="feed"></div>
+        </div>
+
+        <div class="panel controls">
+          <div class="panel-title">Тест донатов (на каждую машину)</div>
+          <div class="grid" id="testGrid"></div>
+          <div class="help">
+            3 лайка у каждой машины: <b>BOOST</b>, <b>BURST</b>, <b>NITRO</b> (разные ускорения + 8‑bit звук).
+          </div>
+        </div>
+
+        <div class="panel wins">
+          <div class="panel-title">Общие победы</div>
+          <div class="wins-total">Всего: <span id="winsTotal">0</span></div>
+          <div class="wins-grid" id="winsGrid"></div>
+        </div>
+      </div>
+
+      <div class="winnerOverlay" id="winner" hidden>
+        <div class="winnerCard">
+          <div class="winnerTitle">ПОБЕДИТЕЛЬ</div>
+          <div class="winnerLane" id="winnerLane">Полоса 1</div>
+          <button class="btn" id="btnNext">Следующий раунд</button>
+        </div>
+      </div>
     </div>
 
-    <div class="footer-note">v2: перспектива (сужение), машинки уменьшаются, движение по маршрутам, победитель на финише.</div>
+    <div class="hit" id="hit" aria-label="tap to donate"></div>
   </div>
 
   <script src="app.js"></script>

@@ -1,175 +1,375 @@
+// Donat Drag Race — TOP SVG project (no images)
 const LANES = 6;
 const ROUND_SECONDS = 60;
 
 const laneColors = ["#ff3b3b","#2f7bff","#ffcc33","#36ff7a","#8b5bff","#ff4bd1"];
-const carFiles = Array.from({length: LANES}, (_,i)=>`assets/clean/car_${String(i+1).padStart(2,"0")}.png`);
-const finishPng = "assets/clean/a_digital_2d_rendering_showcases_a_drag_racing_fin.png";
-const startPng  = "assets/clean/a_2d_digital_illustration_depicts_a_futuristic_gar.png";
+const likeSets = [
+  ["❤️","🔥","⚡"],
+  ["💙","🌊","🌀"],
+  ["💛","✨","⭐"],
+  ["💚","🍀","🌿"],
+  ["💜","🔮","🦄"],
+  ["🩷","🌸","💫"]
+];
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+// Road geometry in SVG coords
+const road = { topY: 260, bottomY: 1680, topL: 400, topR: 680, botL: 80, botR: 1000 };
 
 const el = {
+  scene: document.getElementById("scene"),
+  laneLines: document.getElementById("laneLines"),
+  finishBand: document.getElementById("finishBand"),
+  trails: document.getElementById("trails"),
+  cars: document.getElementById("cars"),
+  flash: document.getElementById("flash"),
+  hit: document.getElementById("hit"),
   bankValue: document.getElementById("bankValue"),
   roundValue: document.getElementById("roundValue"),
   timeValue: document.getElementById("timeValue"),
   feed: document.getElementById("feed"),
-  btnStart: document.getElementById("btnStart"),
-  btnReset: document.getElementById("btnReset"),
-  btnNext: document.getElementById("btnNext"),
-  winner: document.getElementById("winner"),
-  winnerLane: document.getElementById("winnerLane"),
-  hit: document.getElementById("hit"),
+  donorList: document.getElementById("donorList"),
+  testGrid: document.getElementById("testGrid"),
   winsTotal: document.getElementById("winsTotal"),
   winsGrid: document.getElementById("winsGrid"),
+  winner: document.getElementById("winner"),
+  winnerLane: document.getElementById("winnerLane"),
+  btnNext: document.getElementById("btnNext"),
 };
 
-function fmt(n){ return String(n).padStart(2,"0"); }
+const state = {
+  running: false,
+  timeLeft: ROUND_SECONDS,
+  bank: 0,
+  round: 1,
+  pos: Array.from({length: LANES}, ()=>0),
+  speed: Array.from({length: LANES}, ()=>0.11 + Math.random()*0.03),
+  boost: Array.from({length: LANES}, ()=>0),
+  winner: null,
+  wins: Array.from({length: LANES}, ()=>0),
+  donors: {},
+};
+
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
+function fmt2(n){ return String(n).padStart(2,"0"); }
 
+function roadY(t){ return lerp(road.bottomY, road.topY, t); }
+function roadL(t){ return lerp(road.botL, road.topL, t); }
+function roadR(t){ return lerp(road.botR, road.topR, t); }
 
-function loadWins(){
+function laneCenterX(i,t){
+  const L = roadL(t), R = roadR(t);
+  const w = (R-L)/LANES;
+  let x = L + w*(i+0.5);
+  x += Math.sin((t*3.2 + i*0.9)*Math.PI) * 8 * (1-t);
+  return x;
+}
+
+function svgEl(name){ return document.createElementNS("http://www.w3.org/2000/svg", name); }
+
+function buildLaneLines(){
+  el.laneLines.innerHTML = "";
+  for(let i=1;i<LANES;i++){
+    for(let s=0;s<26;s++){
+      if(s%2===1) continue;
+      const t0 = s/26;
+      const t1 = (s+0.55)/26;
+      const y0 = lerp(road.bottomY, road.topY, t0);
+      const y1 = lerp(road.bottomY, road.topY, t1);
+      const tx0 = (road.bottomY - y0)/(road.bottomY-road.topY);
+      const tx1 = (road.bottomY - y1)/(road.bottomY-road.topY);
+      const x0 = laneCenterX(i-0.5, tx0);
+      const x1 = laneCenterX(i-0.5, tx1);
+      const seg = svgEl("line");
+      seg.setAttribute("x1", x0); seg.setAttribute("y1", y0);
+      seg.setAttribute("x2", x1); seg.setAttribute("y2", y1);
+      seg.setAttribute("stroke-width", lerp(10,3,tx0));
+      el.laneLines.appendChild(seg);
+    }
+  }
+}
+
+function buildFinishBand(){
+  el.finishBand.innerHTML = "";
+  const t = 1.0;
+  const L = roadL(t), R = roadR(t);
+  const y = roadY(t) + 22;
+  const bandH = 22;
+  const squares = 24;
+  const w = (R-L)/squares;
+  for(let i=0;i<squares;i++){
+    const r = svgEl("rect");
+    r.setAttribute("x", L + i*w);
+    r.setAttribute("y", y);
+    r.setAttribute("width", w);
+    r.setAttribute("height", bandH);
+    r.setAttribute("fill", i%2===0 ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.75)");
+    el.finishBand.appendChild(r);
+  }
+}
+
+const carNodes = [];
+const trailNodes = [];
+
+function initCars(){
+  el.cars.innerHTML = "";
+  el.trails.innerHTML = "";
+  carNodes.length = 0;
+  trailNodes.length = 0;
+
+  for(let i=0;i<LANES;i++){
+    const p = svgEl("path");
+    p.setAttribute("fill","none");
+    p.setAttribute("stroke", laneColors[i]);
+    p.setAttribute("stroke-linecap","round");
+    p.setAttribute("opacity","0.85");
+    el.trails.appendChild(p);
+    trailNodes.push(p);
+
+    const u = svgEl("use");
+    u.setAttributeNS("http://www.w3.org/1999/xlink","href","#carShape");
+    u.setAttribute("fill", laneColors[i]);
+    u.setAttribute("opacity","0.95");
+    el.cars.appendChild(u);
+    carNodes.push(u);
+  }
+}
+
+function addFeed(name, laneIdx, amount, msg, ico){
+  const item = document.createElement("div");
+  item.className = "feed-item";
+
+  const left = document.createElement("div");
+  left.className = "feed-left";
+
+  const dot = document.createElement("div");
+  dot.className = "dot";
+  dot.style.background = laneColors[laneIdx];
+
+  const wrap = document.createElement("div");
+  wrap.style.minWidth = "0";
+
+  const nm = document.createElement("div");
+  nm.className = "feed-name";
+  nm.textContent = `${ico} ${name} → Полоса ${laneIdx+1}`;
+
+  const m = document.createElement("div");
+  m.className = "feed-msg";
+  m.textContent = msg;
+
+  wrap.appendChild(nm);
+  wrap.appendChild(m);
+
+  left.appendChild(dot);
+  left.appendChild(wrap);
+
+  const amt = document.createElement("div");
+  amt.className = "feed-amt";
+  amt.textContent = amount ? `+${amount}` : "WIN";
+
+  item.appendChild(left);
+  item.appendChild(amt);
+
+  el.feed.prepend(item);
+  while(el.feed.children.length > 10) el.feed.removeChild(el.feed.lastChild);
+}
+
+function updateTopDonors(){
+  const entries = Object.entries(state.donors)
+    .map(([k,v])=>({name:k, total:v}))
+    .sort((a,b)=>b.total-a.total)
+    .slice(0,5);
+
+  el.donorList.innerHTML = "";
+  for(const e of entries){
+    const li = document.createElement("li");
+    const nm = document.createElement("span");
+    nm.className = "nm";
+    nm.textContent = e.name;
+    const am = document.createElement("span");
+    am.className = "am";
+    am.textContent = e.total;
+    li.appendChild(nm); li.appendChild(am);
+    el.donorList.appendChild(li);
+  }
+  if(entries.length === 0){
+    const li = document.createElement("li");
+    li.style.opacity = "0.75";
+    li.textContent = "Пока пусто";
+    el.donorList.appendChild(li);
+  }
+}
+
+function loadPersist(){
   try{
-    const raw = localStorage.getItem("ddr_wins_v3");
-    if(!raw) return;
-    const obj = JSON.parse(raw);
-    if(Array.isArray(obj.wins) && obj.wins.length === LANES){
-      state.wins = obj.wins.map(x=>Number(x)||0);
+    const w = localStorage.getItem("ddr_svg_top_wins");
+    if(w){
+      const obj = JSON.parse(w);
+      if(Array.isArray(obj.wins) && obj.wins.length === LANES){
+        state.wins = obj.wins.map(x=>Number(x)||0);
+      }
+    }
+    const d = localStorage.getItem("ddr_svg_top_donors");
+    if(d){
+      const obj = JSON.parse(d);
+      if(obj && typeof obj === "object") state.donors = obj;
     }
   }catch(e){}
 }
-function saveWins(){
+function savePersist(){
   try{
-    localStorage.setItem("ddr_wins_v3", JSON.stringify({ wins: state.wins }));
+    localStorage.setItem("ddr_svg_top_wins", JSON.stringify({wins: state.wins}));
+    localStorage.setItem("ddr_svg_top_donors", JSON.stringify(state.donors));
   }catch(e){}
 }
 function renderWins(){
-  if(!el.winsGrid || !el.winsTotal) return;
   el.winsGrid.innerHTML = "";
   let total = 0;
   for(let i=0;i<LANES;i++){
     total += state.wins[i];
     const chip = document.createElement("div");
     chip.className = "win-chip";
-    const left = document.createElement("div");
-    left.className = "lbl";
-    left.textContent = `Полоса ${i+1}`;
-    const right = document.createElement("div");
-    right.className = "val";
-    right.textContent = state.wins[i];
-    const dot = document.createElement("span");
-    dot.style.display = "inline-block";
-    dot.style.width = "10px";
-    dot.style.height = "10px";
-    dot.style.borderRadius = "999px";
+
+    const dot = document.createElement("div");
+    dot.className = "dot";
     dot.style.background = laneColors[i];
-    dot.style.boxShadow = "0 0 12px rgba(255,255,255,0.22)";
+
+    const lbl = document.createElement("div");
+    lbl.className = "lbl";
+    lbl.textContent = `Полоса ${i+1}`;
+
+    const val = document.createElement("div");
+    val.className = "val";
+    val.textContent = state.wins[i];
+
     chip.appendChild(dot);
-    chip.appendChild(left);
-    chip.appendChild(right);
+    chip.appendChild(lbl);
+    chip.appendChild(val);
     el.winsGrid.appendChild(chip);
   }
   el.winsTotal.textContent = total;
 }
 
-function loadImage(src){
-  return new Promise((res, rej)=>{
-    const img = new Image();
-    img.onload = ()=>res(img);
-    img.onerror = (e)=>rej(new Error("Failed to load: " + src));
-    img.src = src;
-  });
+// 8-bit audio (WebAudio)
+let audioCtx = null;
+function getAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep({freq=880, dur=0.08, type="square", gain=0.06, when=0}){
+  const ac = getAudio();
+  const t0 = ac.currentTime + when;
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0+dur+0.02);
+}
+function sfx(boostType, laneIdx){
+  const base = 520 + laneIdx*25;
+  if(boostType === "BOOST"){
+    beep({freq: base, dur:0.06, when:0});
+    beep({freq: base*1.25, dur:0.06, when:0.07});
+  } else if(boostType === "BURST"){
+    beep({freq: base*1.5, dur:0.05, when:0});
+    beep({freq: base*1.9, dur:0.05, when:0.05});
+    beep({freq: base*2.2, dur:0.05, when:0.10});
+  } else {
+    beep({freq: base*2.0, dur:0.08, when:0, gain:0.07});
+    beep({freq: base*1.2, dur:0.10, when:0.09, gain:0.06});
+    beep({freq: base*2.6, dur:0.06, when:0.20, gain:0.06});
+  }
 }
 
-const assets = { cars: [], finish:null, start:null, carsOk: [], errs: [] };
-let assetsReady = false;
-let assetMsg = '';
-
-
-const state = {
-  running:false,
-  timeLeft: ROUND_SECONDS,
-  bank:0,
-  round:1,
-  selectedDonate:5,
-  pos: Array.from({length:LANES}, ()=>0),
-  speed: Array.from({length:LANES}, ()=>0.11 + Math.random()*0.03),
-  boost: Array.from({length:LANES}, ()=>0),
-  winner: null,
-  wins: Array.from({length:LANES}, ()=>0),
-};
-
-const road = {
-  vanishX: 0.50,
-  topY: 0.13,
-  bottomY: 0.88,
-  topWidth: 0.26,
-  bottomWidth: 0.86,
-};
-
-function roadWidth(t){ return lerp(road.bottomWidth, road.topWidth, t); }
-function roadCenterX(t){ return lerp(0.50, road.vanishX, t); }
-function roadY(t){ return lerp(road.bottomY, road.topY, t); }
-function roadEdges(t){
-  const w = roadWidth(t);
-  const cx = roadCenterX(t);
-  return { left: cx - w/2, right: cx + w/2, y: roadY(t) };
-}
-function laneCenterX(i, t){
-  const e = roadEdges(t);
-  const laneW = (e.right - e.left) / LANES;
-  let cx = e.left + laneW*(i+0.5);
-  const phase = i * 0.9;
-  cx += Math.sin((t*3.2 + phase)*Math.PI) * 0.007 * (1 - t);
-  return cx;
-}
-function laneHitIndex(xNorm){
-  const t = 0.08;
-  const e = roadEdges(t);
-  if(xNorm < e.left || xNorm > e.right) return null;
-  const laneW = (e.right - e.left) / LANES;
-  return clamp(Math.floor((xNorm - e.left)/laneW), 0, LANES-1);
+function flash(){
+  el.flash.classList.add("on");
+  setTimeout(()=>el.flash.classList.remove("on"), 140);
 }
 
-function addFeed(name, laneIdx, amount){
-  const item = document.createElement("div");
-  item.className = "feed-item";
-  const left = document.createElement("div");
-  left.className = "feed-left";
-  const dot = document.createElement("div");
-  dot.className = "dot";
-  dot.style.background = laneColors[laneIdx];
-  const nm = document.createElement("div");
-  nm.className = "feed-name";
-  nm.textContent = `${name} → L${laneIdx+1}`;
-  left.appendChild(dot); left.appendChild(nm);
-  const amt = document.createElement("div");
-  amt.className = "feed-amt";
-  amt.textContent = amount ? `+${amount}` : "WIN";
-  item.appendChild(left); item.appendChild(amt);
-  el.feed.prepend(item);
-  while(el.feed.children.length > 7) el.feed.removeChild(el.feed.lastChild);
+function buildTestGrid(){
+  el.testGrid.innerHTML = "";
+  for(let i=0;i<LANES;i++){
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const head = document.createElement("div");
+    head.className = "card-head";
+
+    const tag = document.createElement("div");
+    tag.className = "laneTag";
+
+    const dot = document.createElement("div");
+    dot.className = "laneDot";
+    dot.style.background = laneColors[i];
+
+    const name = document.createElement("div");
+    name.className = "laneName";
+    name.textContent = `Машина ${i+1}`;
+
+    tag.appendChild(dot);
+    tag.appendChild(name);
+    head.appendChild(tag);
+
+    const row = document.createElement("div");
+    row.className = "btnRow";
+
+    const presets = [
+      {type:"BOOST", amt:1,  msg:"Лайк BOOST",  ico: likeSets[i][0]},
+      {type:"BURST", amt:5,  msg:"Лайк BURST",  ico: likeSets[i][1]},
+      {type:"NITRO", amt:20, msg:"Лайк NITRO",  ico: likeSets[i][2]},
+    ];
+
+    for(const p of presets){
+      const b = document.createElement("button");
+      b.className = "btnMini";
+      b.innerHTML = `<span class="ico">${p.ico}</span><span>${p.type}</span>`;
+      b.addEventListener("click", ()=> testDonate(i, p));
+      row.appendChild(b);
+    }
+
+    card.appendChild(head);
+    card.appendChild(row);
+    el.testGrid.appendChild(card);
+  }
 }
 
-function donateToLane(laneIdx, amount){
-  if(state.winner !== null) return;
+function addDonor(name, amount){
+  state.donors[name] = (state.donors[name]||0) + amount;
+  savePersist();
+  updateTopDonors();
+}
+
+function testDonate(laneIdx, preset){
+  getAudio().resume?.();
+
+  const donors = ["pluto","dima","katya","neo","vova","queen","ghost","max","tiger","luna"];
+  const name = donors[Math.floor(Math.random()*donors.length)];
+  const amount = preset.amt;
+
   state.bank += amount;
   el.bankValue.textContent = state.bank;
-loadWins();
-renderWins();
-  const b = amount <= 1 ? 0.03 : amount <= 5 ? 0.06 : amount <= 20 ? 0.12 : 0.20;
-  state.boost[laneIdx] = clamp(state.boost[laneIdx] + b, 0, 0.48);
-  const names = ["pluto","dima","katya","neo","vova","queen","ghost","max"];
-  addFeed(names[Math.floor(Math.random()*names.length)], laneIdx, amount);
+  addDonor(name, amount);
+
+  const add = preset.type === "BOOST" ? 0.07 : preset.type === "BURST" ? 0.14 : 0.24;
+  state.boost[laneIdx] = clamp(state.boost[laneIdx] + add, 0, 0.60);
+
+  if(preset.type === "BURST") state.pos[laneIdx] = clamp(state.pos[laneIdx] + 0.015, 0, 1.2);
+  if(preset.type === "NITRO") state.speed[laneIdx] = clamp(state.speed[laneIdx] + 0.004, 0.10, 0.16);
+
+  addFeed(name, laneIdx, amount, preset.msg, preset.ico);
+  sfx(preset.type, laneIdx);
+  flash();
+
+  if(!state.running && state.winner === null) state.running = true;
 }
 
-function toggleStart(){
-  if(state.winner !== null) return;
-  state.running = !state.running;
-  el.btnStart.textContent = state.running ? "Пауза" : "Старт";
-}
-function resetRound(){
+function nextRound(){
+  state.round += 1;
+  el.roundValue.textContent = fmt2(state.round);
   state.running = false;
   state.timeLeft = ROUND_SECONDS;
   state.bank = 0;
@@ -179,235 +379,51 @@ function resetRound(){
   state.winner = null;
   el.feed.innerHTML = "";
   el.bankValue.textContent = state.bank;
-loadWins();
-renderWins();
   el.timeValue.textContent = state.timeLeft;
-  el.btnStart.textContent = "Старт";
   el.winner.hidden = true;
 }
-function nextRound(){
-  state.round += 1;
-  el.roundValue.textContent = fmt(state.round);
-  resetRound();
+
+function laneFromTap(clientX, clientY){
+  const rect = el.scene.getBoundingClientRect();
+  const x = (clientX - rect.left) / rect.width * 1080;
+  const y = (clientY - rect.top) / rect.height * 1920;
+  if(y < road.topY || y > road.bottomY) return null;
+  const t = clamp((road.bottomY - y) / (road.bottomY - road.topY), 0, 1);
+  const L = roadL(t), R = roadR(t);
+  if(x < L || x > R) return null;
+  const laneW = (R-L)/LANES;
+  return clamp(Math.floor((x - L)/laneW), 0, LANES-1);
 }
 
-el.btnStart.addEventListener("click", toggleStart);
-el.btnReset.addEventListener("click", resetRound);
+el.hit.addEventListener("pointerdown", (e)=>{
+  const idx = laneFromTap(e.clientX, e.clientY);
+  if(idx === null) return;
+  testDonate(idx, {type:"BOOST", amt:1, msg:"Тап BOOST", ico: likeSets[idx][0]});
+});
 el.btnNext.addEventListener("click", nextRound);
 
-document.querySelectorAll("[data-d]").forEach(btn=>{
-  btn.addEventListener("click", ()=> state.selectedDonate = Number(btn.getAttribute("data-d")));
-});
-
-el.roundValue.textContent = fmt(state.round);
-el.timeValue.textContent = state.timeLeft;
-el.bankValue.textContent = state.bank;
-loadWins();
-renderWins();
-
-el.hit.addEventListener("pointerdown", (ev)=>{
-  const rect = canvas.getBoundingClientRect();
-  const x = (ev.clientX - rect.left) / rect.width;
-  const idx = laneHitIndex(x);
-  if(idx === null) return;
-  donateToLane(idx, state.selectedDonate);
-});
-
-function resize(){
-  canvas.width = 1080;
-  canvas.height = 1920;
-}
-window.addEventListener("resize", resize);
-resize();
-
-function n2px(xn, yn){ return { x: xn*canvas.width, y: yn*canvas.height }; }
-
-function drawRoad(){
-  const top = roadEdges(1);
-  const bot = roadEdges(0);
-  const p1 = n2px(top.left, top.y);
-  const p2 = n2px(top.right, top.y);
-  const p3 = n2px(bot.right, bot.y);
-  const p4 = n2px(bot.left, bot.y);
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.lineTo(p3.x,p3.y); ctx.lineTo(p4.x,p4.y);
-  ctx.closePath();
-  const g = ctx.createLinearGradient(0, p1.y, 0, p3.y);
-  g.addColorStop(0, "rgba(18,20,30,0.92)");
-  g.addColorStop(1, "rgba(10,11,18,0.98)");
-  ctx.fillStyle = g;
-  ctx.fill();
-  ctx.restore();
-
-  // edge lines
-  ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.08)";
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.moveTo(p1.x,p1.y); ctx.lineTo(p4.x,p4.y);
-  ctx.moveTo(p2.x,p2.y); ctx.lineTo(p3.x,p3.y);
-  ctx.stroke();
-  ctx.restore();
-
-  // dashed lane lines
-  ctx.save();
-  for(let i=1;i<LANES;i++){
-    for(let seg=0; seg<26; seg++){
-      if(seg % 2 === 1) continue;
-      const t0 = seg/26;
-      const t1 = (seg+0.55)/26;
-      const y0 = lerp(road.bottomY, road.topY, t0);
-      const y1 = lerp(road.bottomY, road.topY, t1);
-      const tx0 = (road.bottomY - y0) / (road.bottomY - road.topY);
-      const tx1 = (road.bottomY - y1) / (road.bottomY - road.topY);
-      const x0 = laneCenterX(i-0.5, tx0);
-      const x1 = laneCenterX(i-0.5, tx1);
-      const a = n2px(x0, y0);
-      const b = n2px(x1, y1);
-      ctx.strokeStyle = "rgba(255,255,255,0.22)";
-      ctx.lineWidth = lerp(6, 2, tx0);
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
-function drawStartAndFinish(){
-  if(assets.finish){
-    const w = canvas.width * 0.92;
-    const scale = w / assets.finish.width;
-    const h = assets.finish.height * scale;
-    ctx.drawImage(assets.finish, (canvas.width-w)/2, canvas.height*0.02, w, h);
-  }
-  if(assets.start){
-    const w = canvas.width * 1.05;
-    const scale = w / assets.start.width;
-    const h = assets.start.height * scale;
-    ctx.drawImage(assets.start, (canvas.width-w)/2, canvas.height*0.70, w, h);
-  }
-
-  // finish checkered band
-  const t = 1.0;
-  const e = roadEdges(t);
-  const y = e.y + 0.02;
-  const left = n2px(e.left, y);
-  const right = n2px(e.right, y);
-  const bandH = canvas.height * 0.012;
-  const squares = 24;
-  const sqW = (right.x-left.x)/squares;
-  for(let i=0;i<squares;i++){
-    ctx.fillStyle = i%2==0 ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.75)";
-    ctx.fillRect(left.x + i*sqW, left.y, sqW, bandH);
-  }
-
-  // start line
-  const e0 = roadEdges(0.0);
-  const y0 = e0.y - 0.01;
-  const l0 = n2px(e0.left, y0);
-  const r0 = n2px(e0.right, y0);
-  ctx.strokeStyle = "rgba(255,255,255,0.7)";
-  ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.moveTo(l0.x,l0.y); ctx.lineTo(r0.x,r0.y); ctx.stroke();
-}
-
-function drawTrails(){
+function draw(){
   for(let i=0;i<LANES;i++){
-    const p = state.pos[i];
-    const c = laneColors[i];
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.strokeStyle = c;
-    ctx.lineCap = "round";
-
-    const steps = 24;
-    for(let s=0;s<steps;s++){
-      const tA = (s/steps) * p;
-      const tB = ((s+1)/steps) * p;
-      const A = n2px(laneCenterX(i,tA), roadY(tA));
-      const B = n2px(laneCenterX(i,tB), roadY(tB));
-      ctx.lineWidth = lerp(18, 3.5, tA);
-      ctx.globalAlpha = p>0 ? lerp(0.12, 0.85, (tB/p)) : 0;
-      ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
-    }
-
-    const intensity = clamp(state.boost[i]/0.48, 0, 1);
-    ctx.globalAlpha = 0.30 + intensity*0.40;
-    ctx.shadowColor = c;
-    ctx.shadowBlur = 18 + intensity*22;
-    const X = n2px(laneCenterX(i,p), roadY(p));
-    ctx.beginPath(); ctx.arc(X.x, X.y, 10 + intensity*10, 0, Math.PI*2);
-    ctx.fillStyle = c;
-    ctx.fill();
-
-    ctx.restore();
-  }
-}
-
-function drawFallbackCar(i, P, t, w, h){
-  // simple rounded rectangle + glow as fallback if PNG failed
-  const c = laneColors[i];
-  ctx.save();
-  ctx.translate(P.x, P.y);
-  const rot = Math.sin((t*2.4 + i*0.6)*Math.PI) * 0.03 * (1-t);
-  ctx.rotate(rot);
-  ctx.globalCompositeOperation = "lighter";
-  ctx.shadowColor = c;
-  ctx.shadowBlur = 18;
-  ctx.globalAlpha = 0.85;
-  const r = Math.max(6, w*0.18);
-  ctx.fillStyle = c;
-  roundRect(-w/2, -h/2, w, h, r);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.restore();
-}
-function roundRect(x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y, x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x, y+h, r);
-  ctx.arcTo(x, y+h, x, y, r);
-  ctx.arcTo(x, y, x+w, y, r);
-  ctx.closePath();
-}
-
-function drawDebug(){
-  if(!assetsReady) return;
-  if(!assetMsg) return;
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(20, 20, canvas.width-40, 90);
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("⚠ " + assetMsg, 40, 78);
-  ctx.restore();
-}
-
-function drawCars(){
-  for(let i=0;i<LANES;i++){
-    const img = assets.cars[i];
-    // if PNG not loaded, draw fallback
-
     const t = state.pos[i];
-    const P = n2px(laneCenterX(i,t), roadY(t));
-    const scale = lerp(1.05, 0.32, t);
-    const w = canvas.width * 0.10 * scale;
-    const h = w * (img.height/img.width);
+    const x = laneCenterX(i,t);
+    const y = roadY(t);
 
-    ctx.save();
-    ctx.translate(P.x, P.y);
+    const scale = lerp(1.05, 0.35, t);
     const rot = Math.sin((t*2.4 + i*0.6)*Math.PI) * 0.03 * (1-t);
-    ctx.rotate(rot);
+    carNodes[i].setAttribute("transform", `translate(${x} ${y}) rotate(${rot*57.2958}) scale(${scale})`);
 
-    ctx.globalAlpha = 0.55;
-    ctx.filter = "blur(6px)";
-    ctx.drawImage(img, -w/2, -h/2 + 10*scale, w, h);
-    ctx.filter = "none";
-    ctx.globalAlpha = 1;
-    ctx.drawImage(img, -w/2, -h/2, w, h);
-    ctx.restore();
+    const steps = 18;
+    let d = "";
+    for(let s=0;s<=steps;s++){
+      const tt = (s/steps) * t;
+      const xx = laneCenterX(i,tt);
+      const yy = roadY(tt);
+      d += (s===0 ? `M ${xx} ${yy}` : ` L ${xx} ${yy}`);
+    }
+    const intensity = clamp(state.boost[i]/0.60, 0, 1);
+    trailNodes[i].setAttribute("d", d);
+    trailNodes[i].setAttribute("stroke-width", lerp(22, 6, t));
+    trailNodes[i].setAttribute("opacity", (0.50 + intensity*0.50).toFixed(2));
   }
 }
 
@@ -417,18 +433,17 @@ function checkWinner(){
     if(state.pos[i] >= 1){
       state.winner = i;
       state.running = false;
-      el.btnStart.textContent = "Старт";
       el.winnerLane.textContent = `Полоса ${i+1}`;
       el.winner.hidden = false;
-      addFeed("SYSTEM", i, 0);
-      // wins counter
+
+      addFeed("SYSTEM", i, 0, "Финиш!", "🏁");
+
       state.wins[i] = (state.wins[i]||0) + 1;
-      saveWins();
+      savePersist();
       renderWins();
-      // auto-loop next round after 2.5s
-      setTimeout(()=>{
-        if(state.winner !== null) nextRound();
-      }, 2500);
+
+      sfx("NITRO", i);
+      setTimeout(()=>{ if(state.winner !== null) nextRound(); }, 2600);
       break;
     }
   }
@@ -441,97 +456,42 @@ function update(dt){
   if(state.timeLeft <= 0){
     state.timeLeft = 0;
     state.running = false;
-    el.btnStart.textContent = "Старт";
   }
   el.timeValue.textContent = Math.ceil(state.timeLeft);
 
   for(let i=0;i<LANES;i++){
     const v = state.speed[i] + state.boost[i];
     const drag = lerp(1.0, 0.65, state.pos[i]);
-    state.pos[i] = clamp(state.pos[i] + v * dt * 0.35 * drag, 0, 1.2);
-    state.boost[i] = Math.max(0, state.boost[i] - dt * 0.14);
+    state.pos[i] = clamp(state.pos[i] + v*dt*0.35*drag, 0, 1.2);
+
+    const dec = 0.16 + state.boost[i]*0.22;
+    state.boost[i] = Math.max(0, state.boost[i] - dt*dec);
   }
   checkWinner();
 }
 
-function render(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+function boot(){
+  buildLaneLines();
+  buildFinishBand();
+  initCars();
+  buildTestGrid();
+  loadPersist();
+  renderWins();
+  updateTopDonors();
 
-  // subtle haze
-  const haze = ctx.createLinearGradient(0,0,0,canvas.height);
-  haze.addColorStop(0, "rgba(0,0,0,0.00)");
-  haze.addColorStop(1, "rgba(0,0,0,0.35)");
-  ctx.fillStyle = haze;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  el.roundValue.textContent = fmt2(state.round);
+  el.timeValue.textContent = state.timeLeft;
+  el.bankValue.textContent = state.bank;
 
-  drawRoad();
-  drawTrails();
-  drawCars();
-  drawStartAndFinish();
-  drawDebug();
-}
-
-async function boot(){
-  // Try clean/ first; if missing, fall back to legacy assets/ paths.
-  const altCarFiles = Array.from({length: LANES}, (_,i)=>`assets/car_${String(i+1).padStart(2,"0")}.png`);
-  const altFinish = "assets/a_digital_2d_rendering_showcases_a_drag_racing_fin.png";
-  const altStart  = "assets/a_2d_digital_illustration_depicts_a_futuristic_gar.png";
-
-  const carRes = await Promise.allSettled(carFiles.map(loadImage));
-  assets.cars = [];
-  assets.carsOk = [];
-  for(let i=0;i<carRes.length;i++){
-    if(carRes[i].status === "fulfilled"){
-      assets.cars[i] = carRes[i].value;
-      assets.carsOk[i] = true;
-    } else {
-      assets.carsOk[i] = false;
-      assets.errs.push(carRes[i].reason?.message || String(carRes[i].reason));
-    }
-  }
-  // If most cars failed, try legacy paths
-  const okCount = assets.carsOk.filter(Boolean).length;
-  if(okCount < Math.ceil(LANES/2)){
-    const carRes2 = await Promise.allSettled(altCarFiles.map(loadImage));
-    for(let i=0;i<carRes2.length;i++){
-      if(carRes2[i].status === "fulfilled"){
-        assets.cars[i] = carRes2[i].value;
-        assets.carsOk[i] = true;
-      }
-    }
-  }
-
-  const fin = await Promise.allSettled([loadImage(finishPng), loadImage(altFinish)]);
-  assets.finish = fin[0].status==="fulfilled" ? fin[0].value : (fin[1].status==="fulfilled" ? fin[1].value : null);
-  const st = await Promise.allSettled([loadImage(startPng), loadImage(altStart)]);
-  assets.start = st[0].status==="fulfilled" ? st[0].value : (st[1].status==="fulfilled" ? st[1].value : null);
-
-  assetsReady = true;
-
-  const missingCars = assets.carsOk.filter(x=>!x).length;
-  if(missingCars > 0 || !assets.finish || !assets.start){
-    assetMsg = `Assets: cars missing ${missingCars}/${LANES}, finish ${assets.finish? "ok":"missing"}, start ${assets.start? "ok":"missing"}`;
-    console.warn(assetMsg, assets.errs);
-  }
-  render();
+  addFeed("SYSTEM", 0, 0, "Нажми любые тест‑кнопки — гонка начнётся.", "💬");
 }
 boot();
 
 let last = performance.now();
 function loop(now){
-  const dt = (now-last)/1000;
-  last = now;
+  const dt = (now-last)/1000; last = now;
   update(dt);
-  render();
+  draw();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-
-// demo auto-donates
-function demoDonate(){
-  if(!state.running || state.winner !== null) return;
-  if(Math.random() < 0.12){
-    donateToLane(Math.floor(Math.random()*LANES), [1,5,20,50][Math.floor(Math.random()*4)]);
-  }
-}
-setInterval(demoDonate, 650);
