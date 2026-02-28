@@ -20,11 +20,58 @@ const el = {
   winner: document.getElementById("winner"),
   winnerLane: document.getElementById("winnerLane"),
   hit: document.getElementById("hit"),
+  winsTotal: document.getElementById("winsTotal"),
+  winsGrid: document.getElementById("winsGrid"),
 };
 
 function fmt(n){ return String(n).padStart(2,"0"); }
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
+
+
+function loadWins(){
+  try{
+    const raw = localStorage.getItem("ddr_wins_v3");
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(Array.isArray(obj.wins) && obj.wins.length === LANES){
+      state.wins = obj.wins.map(x=>Number(x)||0);
+    }
+  }catch(e){}
+}
+function saveWins(){
+  try{
+    localStorage.setItem("ddr_wins_v3", JSON.stringify({ wins: state.wins }));
+  }catch(e){}
+}
+function renderWins(){
+  if(!el.winsGrid || !el.winsTotal) return;
+  el.winsGrid.innerHTML = "";
+  let total = 0;
+  for(let i=0;i<LANES;i++){
+    total += state.wins[i];
+    const chip = document.createElement("div");
+    chip.className = "win-chip";
+    const left = document.createElement("div");
+    left.className = "lbl";
+    left.textContent = `Полоса ${i+1}`;
+    const right = document.createElement("div");
+    right.className = "val";
+    right.textContent = state.wins[i];
+    const dot = document.createElement("span");
+    dot.style.display = "inline-block";
+    dot.style.width = "10px";
+    dot.style.height = "10px";
+    dot.style.borderRadius = "999px";
+    dot.style.background = laneColors[i];
+    dot.style.boxShadow = "0 0 12px rgba(255,255,255,0.22)";
+    chip.appendChild(dot);
+    chip.appendChild(left);
+    chip.appendChild(right);
+    el.winsGrid.appendChild(chip);
+  }
+  el.winsTotal.textContent = total;
+}
 
 function loadImage(src){
   return new Promise((res, rej)=>{
@@ -47,6 +94,7 @@ const state = {
   speed: Array.from({length:LANES}, ()=>0.11 + Math.random()*0.03),
   boost: Array.from({length:LANES}, ()=>0),
   winner: null,
+  wins: Array.from({length:LANES}, ()=>0),
 };
 
 const road = {
@@ -105,6 +153,8 @@ function donateToLane(laneIdx, amount){
   if(state.winner !== null) return;
   state.bank += amount;
   el.bankValue.textContent = state.bank;
+loadWins();
+renderWins();
   const b = amount <= 1 ? 0.03 : amount <= 5 ? 0.06 : amount <= 20 ? 0.12 : 0.20;
   state.boost[laneIdx] = clamp(state.boost[laneIdx] + b, 0, 0.48);
   const names = ["pluto","dima","katya","neo","vova","queen","ghost","max"];
@@ -126,6 +176,8 @@ function resetRound(){
   state.winner = null;
   el.feed.innerHTML = "";
   el.bankValue.textContent = state.bank;
+loadWins();
+renderWins();
   el.timeValue.textContent = state.timeLeft;
   el.btnStart.textContent = "Старт";
   el.winner.hidden = true;
@@ -147,6 +199,8 @@ document.querySelectorAll("[data-d]").forEach(btn=>{
 el.roundValue.textContent = fmt(state.round);
 el.timeValue.textContent = state.timeLeft;
 el.bankValue.textContent = state.bank;
+loadWins();
+renderWins();
 
 el.hit.addEventListener("pointerdown", (ev)=>{
   const rect = canvas.getBoundingClientRect();
@@ -323,6 +377,14 @@ function checkWinner(){
       el.winnerLane.textContent = `Полоса ${i+1}`;
       el.winner.hidden = false;
       addFeed("SYSTEM", i, 0);
+      // wins counter
+      state.wins[i] = (state.wins[i]||0) + 1;
+      saveWins();
+      renderWins();
+      // auto-loop next round after 2.5s
+      setTimeout(()=>{
+        if(state.winner !== null) nextRound();
+      }, 2500);
       break;
     }
   }
