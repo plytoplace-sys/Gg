@@ -1,101 +1,101 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sprite Walk</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Walk Sprite</title>
 
-<style>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body{
+      overflow: hidden;
+      background: #000;
+      touch-action: manipulation;
+    }
 
-body{
-    margin:0;
-    overflow:hidden;
-    background:black;
-}
+    /* СПРАЙТ-ПЕРСОНАЖ */
+    #walker{
+      position: fixed;
+      left: 0;
+      bottom: 60px;
 
-/* персонаж */
-#walker{
-    position:fixed;
-    bottom:60px;
-    left:0;
+      /* ⚠️ размер 1 кадра */
+      width: 292px;
+      height: 293px;
 
-    width:292px;
-    height:293px;
+      background-image: url("walk_sprite_30_clean.png");
+      background-repeat: no-repeat;
 
-    background-image:url("walk_sprite_30_clean.png");
-    background-repeat:no-repeat;
+      /* ⚠️ ширина спрайта = 292 * 30 = 8760 */
+      background-size: 8760px 293px;
 
-    /* 30 кадров */
-    background-size:8760px 293px;
+      display: none;
+      pointer-events: none;
+      will-change: transform, background-position;
+      transform: translate3d(-292px,0,0);
+    }
 
-    display:none;
-}
+    /* бесконечная прокрутка кадров */
+    .walking{
+      animation: walkFrames 0.9s steps(30) infinite;
+    }
 
-/* анимация кадров */
-.walk{
-    animation: walk 1s steps(30) infinite;
-}
-
-@keyframes walk{
-
-from{
-background-position:0px 0px;
-}
-
-to{
-background-position:-8760px 0px;
-}
-
-}
-
-</style>
-
+    @keyframes walkFrames{
+      from { background-position: 0 0; }
+      to   { background-position: -8760px 0; }
+    }
+  </style>
 </head>
+
 <body>
+  <div id="walker"></div>
 
-<div id="walker"></div>
+  <script>
+    const walker = document.getElementById("walker");
 
-<script>
+    // ⚠️ настройки под твой спрайт
+    const frameW = 292;
+    const frames = 30;
+    const speedPxPerSec = 120; // скорость движения
 
-const walker = document.getElementById("walker");
+    let running = false;
+    let x = -frameW;   // старт за левым краем
+    let lastT = 0;
 
-let x = -300;
-let speed = 4;
-let running = false;
+    function start(){
+      if (running) return;
+      running = true;
 
-function start(){
+      walker.style.display = "block";
+      walker.classList.add("walking");
 
-if(running) return;
+      x = -frameW;     // слева -> направо
+      lastT = 0;
+      requestAnimationFrame(loop);
+    }
 
-running = true;
+    function loop(t){
+      if (!lastT) lastT = t;
+      const dt = (t - lastT) / 1000;
+      lastT = t;
 
-walker.style.display = "block";
-walker.classList.add("walk");
+      x += speedPxPerSec * dt;
 
-move();
+      // ✅ сбрасываем только когда ПОЛНОСТЬЮ вышел за правый край
+      if (x > window.innerWidth + frameW){
+        x = -frameW;
+      }
 
-}
+      walker.style.transform = `translate3d(${x}px,0,0)`;
+      requestAnimationFrame(loop);
+    }
 
-function move(){
+    // тап/клик по экрану запускает
+    document.addEventListener("pointerdown", (e) => {
+      e.preventDefault?.();
+      start();
+    }, { passive: false });
 
-x += speed;
-
-walker.style.transform = "translateX("+x+"px)";
-
-if(x > window.innerWidth){
-
-x = -300;
-
-}
-
-requestAnimationFrame(move);
-
-}
-
-document.addEventListener("click", start);
-document.addEventListener("touchstart", start);
-
-</script>
-
+  </script>
 </body>
 </html>
