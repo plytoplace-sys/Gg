@@ -8,7 +8,6 @@
   html, body { height:100%; margin:0; }
   body{ overflow:hidden; background:#000; touch-action:manipulation; }
 
-  /* ВНЕШНИЙ КОНТЕЙНЕР: РАЗМЕР ВСЕГДА ОДИН И ТОТ ЖЕ */
   #walkerBox{
     position: fixed;
     left: 0; top: 0;
@@ -17,20 +16,25 @@
     display: none;
     pointer-events: none;
     will-change: transform;
-    transform: translate3d(-999px,-999px,0) scale(0.5);
     transform-origin: left top;
+    z-index: 9999;
+
+    /* DEBUG: чтобы было видно даже если PNG не грузится */
+    background: rgba(255,0,0,0.12);
+    outline: 1px solid rgba(255,0,0,0.35);
   }
 
-  /* ВНУТРЕННИЙ СЛОЙ СО СПРАЙТОМ */
   #sprite{
     position:absolute;
     left:0; top:0;
     background-repeat:no-repeat;
     will-change: background-position, transform;
     transform-origin: left top;
+
+    /* DEBUG */
+    background-color: rgba(0,255,0,0.10);
   }
 
-  /* ===== вправо ===== */
   .right{
     width: 292px; height: 293px;
     background-image: url("assets/walk_sprite_30_clean.png");
@@ -42,7 +46,6 @@
     to   { background-position: -8760px 0; }
   }
 
-  /* ===== вверх ===== */
   .up{
     width: 332px; height: 302px;
     background-image: url("assets/walk_up_sprite_clean.png");
@@ -54,11 +57,10 @@
     to   { background-position: -3984px 0; }
   }
 
-  /* ===== удар ===== */
   .attack{
     width: 459px; height: 392px;
     background-image: url("assets/attack_sprite_clean.png");
-    background-size: 11016px 392px; /* 459*24 */
+    background-size: 11016px 392px;
     animation: attackFrames 1.2s steps(24) infinite;
   }
   @keyframes attackFrames{
@@ -77,49 +79,35 @@
   const box = document.getElementById("walkerBox");
   const sprite = document.getElementById("sprite");
 
-  // Скорость движения
-  const speed = 120; // px/сек
-
-  // Базовый размер (контейнер)
+  const speed = 120;
   const BASE = { w: 292, h: 293 };
+  const UP   = { w: 332, h: 302 };
+  const ATK  = { w: 459, h: 392 };
 
-  // Реальные кадры
-  const RIGHT = { w: 292, h: 293 };
-  const UP    = { w: 332, h: 302 };
-  const ATK   = { w: 459, h: 392 };
-
-  // Масштабы
   const scaleGround = 0.5;
   const scaleUpEnd  = 0.42;
   const groundPad = 0;
 
   let raf = null;
-  let phase = "idle"; // right -> up -> attack
+  let phase = "idle";
   let x = 0, y = 0;
   let lastT = 0;
 
   function setRight(){
     sprite.className = "right";
     sprite.style.transform = "translate3d(0,0,0) scale(1)";
-    sprite.style.animationPlayState = "running";
   }
 
   function setUp(){
     sprite.className = "up";
-    const k = BASE.w / UP.w;          // компенсация ширины
+    const k = BASE.w / UP.w; // компенсация
     sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
-    sprite.style.animationPlayState = "running";
   }
 
   function setAttack(){
     sprite.className = "attack";
-
-    // ✅ Подгонка размера удара под базовую ширину (без скачка)
-    const k = BASE.w / ATK.w;         // 292/459
+    const k = BASE.w / ATK.w; // компенсация
     sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
-
-    // удар играет бесконечно
-    sprite.style.animationPlayState = "running";
   }
 
   function resetAndStart(){
@@ -127,9 +115,6 @@
     raf = null;
 
     box.style.display = "block";
-    box.style.width = BASE.w + "px";
-    box.style.height = BASE.h + "px";
-
     phase = "right";
     setRight();
 
@@ -167,37 +152,29 @@
       const targetY = midY - (BASE.h * scaleUpEnd) * 0.5;
       const startY  = window.innerHeight - (BASE.h * scaleGround) - groundPad;
 
-      const prog = clamp01((startY - y) / (startY - targetY));
-      const s = lerp(scaleGround, scaleUpEnd, prog);
+      const prog = Math.max(0, Math.min(1, (startY - y) / (startY - targetY)));
+      const s = scaleGround + (scaleUpEnd - scaleGround) * prog;
 
       if (y <= targetY){
-        // дошёл до середины — включаем удар и стоим на месте
         y = targetY;
         phase = "attack";
         setAttack();
-
-        // фиксируем позицию/масштаб (остаётся как есть, без дальнейшего движения)
         box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleUpEnd})`;
-
-        raf = null; // останавливаем loop: больше двигать не надо
+        raf = null; // больше не двигаем, только анимация удара крутится CSS-ом
         return;
       }
 
       box.style.transform = `translate3d(${x}px,${y}px,0) scale(${s})`;
     }
+
+    raf = requestAnimationFrame(loop);
   }
 
-  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
-  function lerp(a,b,t){ return a + (b-a)*t; }
-
-  function onTap(){
-    // любой тап = сброс прошлого цикла и старт заново
-    resetAndStart();
-  }
-
-  document.addEventListener("touchstart", onTap, { passive: true });
-  document.addEventListener("click", onTap);
-  document.addEventListener("pointerdown", onTap);
+  // ✅ все варианты тапа
+  const tap = () => resetAndStart();
+  document.addEventListener("touchstart", tap, { passive: true });
+  document.addEventListener("pointerdown", tap);
+  document.addEventListener("click", tap); 
 </script>
 </body>
 </html>
