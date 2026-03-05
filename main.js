@@ -1,4 +1,4 @@
-const VER = "na-3"; // поменяй строку если GitHub Pages кэшит
+const VER = "na-2"; // поменяй строку если GitHub Pages кэшит
 
 // ====== SPRITES (без атласа) ======
 const SPRITES = {
