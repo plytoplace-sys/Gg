@@ -6,7 +6,7 @@
 <title>Walk Cycle</title>
 <style>
   html, body { height:100%; margin:0; }
-  body{ overflow:hidden; background:#000; touch-action:manipulation; }
+  body { overflow:hidden; background:#000; touch-action:manipulation; }
 
   #walkerBox{
     position: fixed;
@@ -17,11 +17,6 @@
     pointer-events: none;
     will-change: transform;
     transform-origin: left top;
-    z-index: 9999;
-
-    /* DEBUG: чтобы было видно даже если PNG не грузится */
-    background: rgba(255,0,0,0.12);
-    outline: 1px solid rgba(255,0,0,0.35);
   }
 
   #sprite{
@@ -30,9 +25,6 @@
     background-repeat:no-repeat;
     will-change: background-position, transform;
     transform-origin: left top;
-
-    /* DEBUG */
-    background-color: rgba(0,255,0,0.10);
   }
 
   .right{
@@ -61,9 +53,9 @@
     width: 459px; height: 392px;
     background-image: url("assets/attack_sprite_clean.png");
     background-size: 11016px 392px;
-    animation: attackFrames 1.2s steps(24) infinite;
+    animation: atkFrames 1.2s steps(24) infinite;
   }
-  @keyframes attackFrames{
+  @keyframes atkFrames{
     from { background-position: 0 0; }
     to   { background-position: -11016px 0; }
   }
@@ -71,9 +63,7 @@
 </head>
 <body>
 
-  <div id="walkerBox">
-    <div id="sprite"></div>
-  </div>
+<div id="walkerBox"><div id="sprite"></div></div>
 
 <script>
   const box = document.getElementById("walkerBox");
@@ -86,7 +76,7 @@
 
   const scaleGround = 0.5;
   const scaleUpEnd  = 0.42;
-  const groundPad = 0;
+  const groundPad   = 0;
 
   let raf = null;
   let phase = "idle";
@@ -96,18 +86,21 @@
   function setRight(){
     sprite.className = "right";
     sprite.style.transform = "translate3d(0,0,0) scale(1)";
+    sprite.style.animationPlayState = "running";
   }
 
   function setUp(){
     sprite.className = "up";
-    const k = BASE.w / UP.w; // компенсация
+    const k = BASE.w / UP.w;
     sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
+    sprite.style.animationPlayState = "running";
   }
 
   function setAttack(){
     sprite.className = "attack";
-    const k = BASE.w / ATK.w; // компенсация
+    const k = BASE.w / ATK.w;
     sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
+    sprite.style.animationPlayState = "running";
   }
 
   function resetAndStart(){
@@ -145,36 +138,48 @@
       }
 
       box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleGround})`;
+      raf = requestAnimationFrame(loop);
+      return;
+    }
 
-    } else if (phase === "up"){
+    if (phase === "up"){
       y -= speed * dt;
 
       const targetY = midY - (BASE.h * scaleUpEnd) * 0.5;
       const startY  = window.innerHeight - (BASE.h * scaleGround) - groundPad;
 
-      const prog = Math.max(0, Math.min(1, (startY - y) / (startY - targetY)));
-      const s = scaleGround + (scaleUpEnd - scaleGround) * prog;
+      const prog = clamp01((startY - y) / (startY - targetY));
+      const s = lerp(scaleGround, scaleUpEnd, prog);
 
       if (y <= targetY){
         y = targetY;
         phase = "attack";
         setAttack();
+
         box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleUpEnd})`;
-        raf = null; // больше не двигаем, только анимация удара крутится CSS-ом
+
+        // ❗ больше не двигаем: удар крутится CSS-анимацией бесконечно
+        raf = null;
         return;
       }
 
       box.style.transform = `translate3d(${x}px,${y}px,0) scale(${s})`;
+      raf = requestAnimationFrame(loop);
+      return;
     }
-
-    raf = requestAnimationFrame(loop);
   }
 
-  // ✅ все варианты тапа
-  const tap = () => resetAndStart();
-  document.addEventListener("touchstart", tap, { passive: true });
-  document.addEventListener("pointerdown", tap);
-  document.addEventListener("click", tap); 
+  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function onTap(){
+    resetAndStart();
+  }
+
+  document.addEventListener("touchstart", onTap, { passive: true });
+  document.addEventListener("pointerdown", onTap);
+  document.addEventListener("click", onTap);
 </script>
+
 </body>
 </html>
