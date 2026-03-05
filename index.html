@@ -12,7 +12,7 @@
   #walkerBox{
     position: fixed;
     left: 0; top: 0;
-    width: 292px;   /* базовый размер как "вправо" */
+    width: 292px;
     height: 293px;
     display: none;
     pointer-events: none;
@@ -53,6 +53,18 @@
     from { background-position: 0 0; }
     to   { background-position: -3984px 0; }
   }
+
+  /* ===== удар ===== */
+  .attack{
+    width: 459px; height: 392px;
+    background-image: url("assets/attack_sprite_clean.png");
+    background-size: 11016px 392px; /* 459*24 */
+    animation: attackFrames 1.2s steps(24) infinite;
+  }
+  @keyframes attackFrames{
+    from { background-position: 0 0; }
+    to   { background-position: -11016px 0; }
+  }
 </style>
 </head>
 <body>
@@ -65,38 +77,48 @@
   const box = document.getElementById("walkerBox");
   const sprite = document.getElementById("sprite");
 
-  // Скорость движения (твоя)
+  // Скорость движения
   const speed = 120; // px/сек
 
   // Базовый размер (контейнер)
   const BASE = { w: 292, h: 293 };
 
-  // Реальные кадры спрайтов
+  // Реальные кадры
   const RIGHT = { w: 292, h: 293 };
   const UP    = { w: 332, h: 302 };
+  const ATK   = { w: 459, h: 392 };
 
   // Масштабы
-  const scaleGround = 0.5;    // общий масштаб персонажа на земле
-  const scaleUpEnd  = 0.42;   // конечный масштаб при подъёме (отдаление)
-  const groundPad = 0;        // ноги прям по низу
+  const scaleGround = 0.5;
+  const scaleUpEnd  = 0.42;
+  const groundPad = 0;
 
   let raf = null;
-  let phase = "idle";
+  let phase = "idle"; // right -> up -> attack
   let x = 0, y = 0;
   let lastT = 0;
 
   function setRight(){
     sprite.className = "right";
-    // при "вправо" внутренний слой не требует компенсации (1:1)
     sprite.style.transform = "translate3d(0,0,0) scale(1)";
     sprite.style.animationPlayState = "running";
   }
 
   function setUp(){
     sprite.className = "up";
-    // ✅ компенсация размера: чтобы ВЫГЛЯДЕЛ ОДИНАКОВО по ширине с базой
-    const k = BASE.w / UP.w; // 292/332 ≈ 0.8795
+    const k = BASE.w / UP.w;          // компенсация ширины
     sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
+    sprite.style.animationPlayState = "running";
+  }
+
+  function setAttack(){
+    sprite.className = "attack";
+
+    // ✅ Подгонка размера удара под базовую ширину (без скачка)
+    const k = BASE.w / ATK.w;         // 292/459
+    sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
+
+    // удар играет бесконечно
     sprite.style.animationPlayState = "running";
   }
 
@@ -131,50 +153,45 @@
       x += speed * dt;
       y = window.innerHeight - (BASE.h * scaleGround) - groundPad;
 
-      // дошёл до середины — переключаемся на "вверх" без скачка размера
       if (x >= midX){
         phase = "up";
         setUp();
-
-        // стартовая Y поднимания: из "низа" к "середине"
         y = window.innerHeight - (BASE.h * scaleGround) - groundPad;
       }
 
       box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleGround})`;
 
     } else if (phase === "up"){
-      // движение вверх
       y -= speed * dt;
 
-      // целевая точка: остановиться по центру
       const targetY = midY - (BASE.h * scaleUpEnd) * 0.5;
+      const startY  = window.innerHeight - (BASE.h * scaleGround) - groundPad;
 
-      // прогресс подъёма, чтобы уменьшать scale плавно
-      const startY = window.innerHeight - (BASE.h * scaleGround) - groundPad;
       const prog = clamp01((startY - y) / (startY - targetY));
       const s = lerp(scaleGround, scaleUpEnd, prog);
 
       if (y <= targetY){
+        // дошёл до середины — включаем удар и стоим на месте
         y = targetY;
-        phase = "stop";
-        sprite.style.animationPlayState = "paused"; // заморозить кадр
+        phase = "attack";
+        setAttack();
+
+        // фиксируем позицию/масштаб (остаётся как есть, без дальнейшего движения)
         box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleUpEnd})`;
-        raf = null;
+
+        raf = null; // останавливаем loop: больше двигать не надо
         return;
       }
 
       box.style.transform = `translate3d(${x}px,${y}px,0) scale(${s})`;
     }
-
-    raf = requestAnimationFrame(loop);
   }
 
   function clamp01(v){ return Math.max(0, Math.min(1, v)); }
   function lerp(a,b,t){ return a + (b-a)*t; }
 
   function onTap(){
-    // новый тап — всегда сброс и запуск заново
-    sprite.style.animationPlayState = "running";
+    // любой тап = сброс прошлого цикла и старт заново
     resetAndStart();
   }
 
