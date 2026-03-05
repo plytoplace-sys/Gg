@@ -37,7 +37,7 @@
 
     /* бесконечная прокрутка кадров */
     .walking{
-      animation: walkFrames 1.4s steps(30) infinite;
+      animation: walkFrames 6s steps(30) infinite;
     }
 
     @keyframes walkFrames{
@@ -86,7 +86,7 @@
         x = -frameW;
       }
 
-      walker.style.transform = `translate3d(${x}px,0,0)`;
+      walker.style.transform = `translate3d(${x}px,0,0) scale(0.5)`;
       requestAnimationFrame(loop);
     }
 
