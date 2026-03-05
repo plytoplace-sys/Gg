@@ -1,107 +1,101 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Sprite Walk</title>
-  <style>
-    html, body { height:100%; margin:0; }
-    body{
-      overflow:hidden;
-      background:#0b0e14;
-      touch-action: manipulation; /* чтобы тап не зумил */
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprite Walk</title>
 
-    /* Персонаж */
-    .walker{
-      position: fixed;
-      bottom: 6vh;         /* поставь как надо */
-      left: 100vw;         /* старт за правым краем */
-      width: 292px;        /* ВАЖНО: ширина 1 кадра */
-      height: 293px;       /* ВАЖНО: высота 1 кадра */
-      background-image: url("assets/walk_sprite_30_clean.png");
-      background-repeat: no-repeat;
-      background-size: calc(292px * 30) 293px; /* 30 кадров в ряд */
-      will-change: transform, background-position;
-      pointer-events: none;
-      display: none;
-      transform: translate3d(0,0,0);
-    }
+<style>
 
-    /* Анимация кадров спрайта */
-    .walking{
-      animation: walkFrames 0.9s steps(30) infinite;
-    }
-    @keyframes walkFrames{
-      from { background-position: 0 0; }
-      to   { background-position: calc(-292px * 30) 0; }
-    }
-  </style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+}
+
+/* персонаж */
+#walker{
+    position:fixed;
+    bottom:60px;
+    left:0;
+
+    width:292px;
+    height:293px;
+
+    background-image:url("walk_sprite_30_clean.png");
+    background-repeat:no-repeat;
+
+    /* 30 кадров */
+    background-size:8760px 293px;
+
+    display:none;
+}
+
+/* анимация кадров */
+.walk{
+    animation: walk 1s steps(30) infinite;
+}
+
+@keyframes walk{
+
+from{
+background-position:0px 0px;
+}
+
+to{
+background-position:-8760px 0px;
+}
+
+}
+
+</style>
+
 </head>
 <body>
 
-  <div id="walker" class="walker"></div>
+<div id="walker"></div>
 
-  <script>
-    const walker = document.getElementById("walker");
+<script>
 
-    // Настройки движения
-    const frameW = 292;        // ширина кадра (как у тебя)
-    const speed = 220;         // px/сек (скорость движения влево)
-    const spawnOffset = 10;    // насколько за край справа стартует
-    const despawnOffset = 40;  // насколько за край слева должен уйти
+const walker = document.getElementById("walker");
 
-    let running = false;
-    let x = 0;
-    let lastT = 0;
+let x = -300;
+let speed = 4;
+let running = false;
 
-    function spawn(){
-      const vw = window.innerWidth;
-      x = vw + spawnOffset;        // старт за правым краем
-      walker.style.display = "block";
-      walker.classList.add("walking");
-      walker.style.transform = `translate3d(${x}px,0,0)`;
-    }
+function start(){
 
-    function loop(t){
-      if (!running) return;
-      if (!lastT) lastT = t;
-      const dt = (t - lastT) / 1000;
-      lastT = t;
+if(running) return;
 
-      x -= speed * dt;
+running = true;
 
-      // если ушёл за левый край — телепорт на правый (бесконечный заход)
-      if (x < -frameW - despawnOffset){
-        x = window.innerWidth + spawnOffset;
-      }
+walker.style.display = "block";
+walker.classList.add("walk");
 
-      walker.style.transform = `translate3d(${x}px,0,0)`;
-      requestAnimationFrame(loop);
-    }
+move();
 
-    function start(){
-      if (running) return;
-      running = true;
-      lastT = 0;
-      spawn();
-      requestAnimationFrame(loop);
-    }
+}
 
-    // Тап по экрану (и клик на ПК)
-    function onTap(e){
-      e.preventDefault?.();
-      start();
-    }
+function move(){
 
-    document.addEventListener("pointerdown", onTap, { passive: false });
-    document.addEventListener("click", onTap, { passive: false });
+x += speed;
 
-    // чтобы при повороте экрана не ломалось
-    window.addEventListener("resize", () => {
-      if (!running) return;
-      x = Math.min(x, window.innerWidth + spawnOffset);
-    });
-  </script>
+walker.style.transform = "translateX("+x+"px)";
+
+if(x > window.innerWidth){
+
+x = -300;
+
+}
+
+requestAnimationFrame(move);
+
+}
+
+document.addEventListener("click", start);
+document.addEventListener("touchstart", start);
+
+</script>
+
 </body>
 </html>
