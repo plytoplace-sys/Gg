@@ -1,101 +1,186 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Walk Sprite</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Walk Cycle</title>
+<style>
+  html, body { height:100%; margin:0; }
+  body{ overflow:hidden; background:#000; touch-action:manipulation; }
 
-  <style>
-    html, body { height: 100%; margin: 0; }
-    body{
-      overflow: hidden;
-      background: #000;
-      touch-action: manipulation;
-    }
+  /* ВНЕШНИЙ КОНТЕЙНЕР: РАЗМЕР ВСЕГДА ОДИН И ТОТ ЖЕ */
+  #walkerBox{
+    position: fixed;
+    left: 0; top: 0;
+    width: 292px;   /* базовый размер как "вправо" */
+    height: 293px;
+    display: none;
+    pointer-events: none;
+    will-change: transform;
+    transform: translate3d(-999px,-999px,0) scale(0.5);
+    transform-origin: left top;
+  }
 
-    /* СПРАЙТ-ПЕРСОНАЖ */
-    #walker{
-      position: fixed;
-      left: 0;
-      bottom: 60px;
+  /* ВНУТРЕННИЙ СЛОЙ СО СПРАЙТОМ */
+  #sprite{
+    position:absolute;
+    left:0; top:0;
+    background-repeat:no-repeat;
+    will-change: background-position, transform;
+    transform-origin: left top;
+  }
 
-      /* ⚠️ размер 1 кадра */
-      width: 292px;
-      height: 293px;
+  /* ===== вправо ===== */
+  .right{
+    width: 292px; height: 293px;
+    background-image: url("assets/walk_sprite_30_clean.png");
+    background-size: 8760px 293px;
+    animation: rightFrames 6s steps(30) infinite;
+  }
+  @keyframes rightFrames{
+    from { background-position: 0 0; }
+    to   { background-position: -8760px 0; }
+  }
 
-      background-image: url("assets/walk_sprite_30_clean.png");
-      background-repeat: no-repeat;
-
-      /* ⚠️ ширина спрайта = 292 * 30 = 8760 */
-      background-size: 8760px 293px;
-
-      display: none;
-      pointer-events: none;
-      will-change: transform, background-position;
-      transform: translate3d(-292px,0,0);
-    }
-
-    /* бесконечная прокрутка кадров */
-    .walking{
-      animation: walkFrames 6s steps(30) infinite;
-    }
-
-    @keyframes walkFrames{
-      from { background-position: 0 0; }
-      to   { background-position: -8760px 0; }
-    }
-  </style>
+  /* ===== вверх ===== */
+  .up{
+    width: 332px; height: 302px;
+    background-image: url("assets/walk_up_sprite_clean.png");
+    background-size: 3984px 302px;
+    animation: upFrames 1.8s steps(12) infinite;
+  }
+  @keyframes upFrames{
+    from { background-position: 0 0; }
+    to   { background-position: -3984px 0; }
+  }
+</style>
 </head>
-
 <body>
-  <div id="walker"></div>
 
-  <script>
-    const walker = document.getElementById("walker");
+  <div id="walkerBox">
+    <div id="sprite"></div>
+  </div>
 
-    // ⚠️ настройки под твой спрайт
-    const frameW = 292;
-    const frames = 30;
-    const speedPxPerSec = 120; // скорость движения
+<script>
+  const box = document.getElementById("walkerBox");
+  const sprite = document.getElementById("sprite");
 
-    let running = false;
-    let x = -frameW;   // старт за левым краем
-    let lastT = 0;
+  // Скорость движения (твоя)
+  const speed = 120; // px/сек
 
-    function start(){
-      if (running) return;
-      running = true;
+  // Базовый размер (контейнер)
+  const BASE = { w: 292, h: 293 };
 
-      walker.style.display = "block";
-      walker.classList.add("walking");
+  // Реальные кадры спрайтов
+  const RIGHT = { w: 292, h: 293 };
+  const UP    = { w: 332, h: 302 };
 
-      x = -frameW;     // слева -> направо
-      lastT = 0;
-      requestAnimationFrame(loop);
-    }
+  // Масштабы
+  const scaleGround = 0.5;    // общий масштаб персонажа на земле
+  const scaleUpEnd  = 0.42;   // конечный масштаб при подъёме (отдаление)
+  const groundPad = 0;        // ноги прям по низу
 
-    function loop(t){
-      if (!lastT) lastT = t;
-      const dt = (t - lastT) / 1000;
-      lastT = t;
+  let raf = null;
+  let phase = "idle";
+  let x = 0, y = 0;
+  let lastT = 0;
 
-      x += speedPxPerSec * dt;
+  function setRight(){
+    sprite.className = "right";
+    // при "вправо" внутренний слой не требует компенсации (1:1)
+    sprite.style.transform = "translate3d(0,0,0) scale(1)";
+    sprite.style.animationPlayState = "running";
+  }
 
-      // ✅ сбрасываем только когда ПОЛНОСТЬЮ вышел за правый край
-      if (x > window.innerWidth + frameW){
-        x = -frameW;
+  function setUp(){
+    sprite.className = "up";
+    // ✅ компенсация размера: чтобы ВЫГЛЯДЕЛ ОДИНАКОВО по ширине с базой
+    const k = BASE.w / UP.w; // 292/332 ≈ 0.8795
+    sprite.style.transform = `translate3d(0,0,0) scale(${k})`;
+    sprite.style.animationPlayState = "running";
+  }
+
+  function resetAndStart(){
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+
+    box.style.display = "block";
+    box.style.width = BASE.w + "px";
+    box.style.height = BASE.h + "px";
+
+    phase = "right";
+    setRight();
+
+    x = -BASE.w;
+    y = window.innerHeight - (BASE.h * scaleGround) - groundPad;
+
+    lastT = 0;
+    box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleGround})`;
+    raf = requestAnimationFrame(loop);
+  }
+
+  function loop(t){
+    if (!lastT) lastT = t;
+    const dt = (t - lastT) / 1000;
+    lastT = t;
+
+    const midX = window.innerWidth * 0.5;
+    const midY = window.innerHeight * 0.5;
+
+    if (phase === "right"){
+      x += speed * dt;
+      y = window.innerHeight - (BASE.h * scaleGround) - groundPad;
+
+      // дошёл до середины — переключаемся на "вверх" без скачка размера
+      if (x >= midX){
+        phase = "up";
+        setUp();
+
+        // стартовая Y поднимания: из "низа" к "середине"
+        y = window.innerHeight - (BASE.h * scaleGround) - groundPad;
       }
 
-      walker.style.transform = `translate3d(${x}px,0,0) scale(0.5)`;
-      requestAnimationFrame(loop);
+      box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleGround})`;
+
+    } else if (phase === "up"){
+      // движение вверх
+      y -= speed * dt;
+
+      // целевая точка: остановиться по центру
+      const targetY = midY - (BASE.h * scaleUpEnd) * 0.5;
+
+      // прогресс подъёма, чтобы уменьшать scale плавно
+      const startY = window.innerHeight - (BASE.h * scaleGround) - groundPad;
+      const prog = clamp01((startY - y) / (startY - targetY));
+      const s = lerp(scaleGround, scaleUpEnd, prog);
+
+      if (y <= targetY){
+        y = targetY;
+        phase = "stop";
+        sprite.style.animationPlayState = "paused"; // заморозить кадр
+        box.style.transform = `translate3d(${x}px,${y}px,0) scale(${scaleUpEnd})`;
+        raf = null;
+        return;
+      }
+
+      box.style.transform = `translate3d(${x}px,${y}px,0) scale(${s})`;
     }
 
-    // тап/клик по экрану запускает
-    document.addEventListener("pointerdown", (e) => {
-      e.preventDefault?.();
-      start();
-    }, { passive: false });
+    raf = requestAnimationFrame(loop);
+  }
 
-  </script>
+  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function onTap(){
+    // новый тап — всегда сброс и запуск заново
+    sprite.style.animationPlayState = "running";
+    resetAndStart();
+  }
+
+  document.addEventListener("touchstart", onTap, { passive: true });
+  document.addEventListener("click", onTap);
+  document.addEventListener("pointerdown", onTap);
+</script>
 </body>
 </html>
